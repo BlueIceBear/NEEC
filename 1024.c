@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <math.h>
 
 #define STRING_SIZE 100       // max size for some strings
 #define TABLE_SIZE 650        // main game space size
@@ -31,8 +32,15 @@ void RenderStats( SDL_Renderer *, int , int , int );
 void LoadValues(SDL_Surface **);
 void UnLoadValues(SDL_Surface **);
 
+
+/* All the parameters of each function are explained respectively,
+* according to the order of their declaration
+*/
+
 void Parameters(int *, char *, int*);
 void SaveResults(char * , int, int, int);
+void GenStart(int board[][MAX_BOARD_POS], int);
+void GenPiece(int board[][MAX_BOARD_POS], int);
 void NewGame();
 
 // definition of some strings: they cannot be changed when the program is executed !
@@ -57,13 +65,14 @@ int main( int argc, char* args[] )
     int square_size_px, board_size_px, board_pos = 5;
     int board[MAX_BOARD_POS][MAX_BOARD_POS] = {{0}};
 
-    int size;
+    int board_size;
     char name[STRING_SIZE];
     int difficulty;
 
     int points = 0, max_points = 0, max_pc = 0, game_time = 0;
 
 
+    /*
     // some examples
     board[0][0] = 1;
     board[2][0] = 2;
@@ -72,17 +81,26 @@ int main( int argc, char* args[] )
     board[4][0] = 5;
     board[3][0] = 8;
     board[0][1] = 10;
+    */
+
+    // Initializes the function rand()
+    srand(time(NULL));
+
+    // Asks for parameters
+    Parameters(&board_size, name, &difficulty);
+
+    // Starts the generation of the first pieces of the board
+    GenStart(board, board_size);
 
     // initialize graphics
     InitEverything(width, height, &serif, imgs, &window, &renderer);
     // loads numbers as images
     LoadValues(array_of_numbers);
 
-    Parameters(&size, name, &difficulty);
-
-
     while( quit == 0 )
     {
+
+
         // while there's events to handle
         while( SDL_PollEvent( &event ) )
         {
@@ -104,13 +122,13 @@ int main( int argc, char* args[] )
                     case SDLK_u:
 
                     case SDLK_UP:
-                        // todo
+                        GenPiece(board, board_size);
                     case SDLK_DOWN:
-                        // todo
+                        GenPiece(board, board_size);
                     case SDLK_LEFT:
-                        // todo
+                        GenPiece(board, board_size);
                     case SDLK_RIGHT:
-                        // todo
+                        GenPiece(board, board_size);
                     default:
                         break;
                 }
@@ -141,23 +159,34 @@ int main( int argc, char* args[] )
 }
 
 
-void Parameters(int *_size, char *_name, int *_difficulty)
+
+
+
+
+
+
+/* Parameters: Asks the user for the required parameters for the game to work 
+*  Board size, player's name and difficulty
+*/
+void Parameters(int *_board_size, char *_name, int *_difficulty)
 {
     int var = 0;
 
-    int size = *_size, difficulty = *_difficulty;
+    int board_size = *_board_size, difficulty = *_difficulty;   // Auxilliary variables to help the management of parameters
 
+    // Asks for the board_size
     while(var == 0)
     {
         printf("Choose size for board: ");
-        scanf("%d", &size);
+        scanf("%d", &board_size);
 
-        if(size < 2 || size > 11) printf("The board size must be between 2 and 11.\n");
+        if(board_size < 2 || board_size > 11) printf("The board size must be between 2 and 11.\n");
         else var = 1;
     }
 
     var = 0;
 
+    // Asks for the name of the player
     while(var == 0)
     {
         printf("\nChoose your name: ");
@@ -169,6 +198,7 @@ void Parameters(int *_size, char *_name, int *_difficulty)
 
     var = 0;
 
+    // Asks for the difficulty of the game
     while(var == 0)
     {
         printf("\nChoose difficulty (from 4 to 23): ");
@@ -178,16 +208,80 @@ void Parameters(int *_size, char *_name, int *_difficulty)
         else var = 1;
     }
 
-    *_size = size;
+    *_board_size = board_size;
     *_difficulty = difficulty;
 }
 
+/* GenStart: generates the start of the game 
+*/
+void GenStart(int board[][MAX_BOARD_POS], int _board_size)
+{
+    int pos1, pos2, pos3, pos4, val;
+
+    // Initializes the random position and value (2 or 4) for the first pieces
+    pos1 = rand() % _board_size;
+    pos2 = rand() % _board_size;
+
+    val = (rand() % 2) + 1;
+    printf("val1 = %d\n", val);
+
+    board[pos1][pos2] = val;
+
+    // We need to be sure that the two first pieces don't overlap
+    while(1)
+    {
+        pos3 = rand() % _board_size;
+        pos4 = rand() % _board_size;
+
+        if(pos3 != pos1 || pos4 != pos2) break;
+    }
+
+    val = (rand() % 2) + 1;
+    printf("val2 = %d\n", val);
+
+    board[pos3][pos4] = val;
+}
+
+/* GenPiece: Generates a new piece on the board
+*  The board's matrix and it's size
+*/
+void GenPiece(int board[][MAX_BOARD_POS], int _board_size)
+{
+    int pos1 = 0, pos2 = 0, val, aux = 1;
+
+    // Initializes the random position and value (2 or 4) for the first pieces
+    while(board[pos1][pos2] != 0 || aux == 1)
+    {
+        pos1 = rand() % _board_size;
+        pos2 = rand() % _board_size;
+
+        aux = 0;
+    }
+
+    val = (rand() % 2) + 1;
+
+    board[pos1][pos2] = val;
+}
+
+/* MovPiece: Caculates the movements of the pieces on the board
+*
+*/
+void MovPiece()
+{
+
+}
+
+/* NewGame: creates a new game. Points and time reset 
+*/
 void NewGame()
 {
-    
+
 }
 
 
+/* SaveResults: Writes or creates if necessary, a file with all the player's stats
+*  Player's name, points, the highest piece they achieved and the total game time
+*/
 void SaveResults(char *name, int points, int max_pc, int game_time)
 {
     FILE *results;
@@ -198,6 +292,12 @@ void SaveResults(char *name, int points, int max_pc, int game_time)
 
     fclose(results);
 }
+
+
+
+
+
+
 
 
 /**
