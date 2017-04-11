@@ -1,95 +1,45 @@
 4
 Points - 0
-Highest piece - 1
-Time - 3
-
-4
-Points - 20
-Highest piece - 8
+Highest piece - 4
 Time - 5
 
-4
-Points - 128
-Highest piece - 32
-Time - 28
-
-5
-Points - 124
-Highest piece - 32
-Time - 23
-
-5
-Points - 120
-Highest piece - 32
-Time - 49
+2
+Points - 0
+Highest piece - 1
+Time - 2
 
 4
-Points - 72
-Highest piece - 16
-Time - 14
-
-4
-Points - 40
-Highest piece - 16
-Time - 12
-
-5
-Points - 116
-Highest piece - 32
-Time - 9
-
-4
-Points - 32
-Highest piece - 16
-Time - 9
-
-4
-Points - 72
-Highest piece - 16
-Time - 28
-
-4
-Points - 40
-Highest piece - 16
-Time - 12
-
-4
-Points - 52
+Points - 44
 Highest piece - 16
 Time - 15
 
-4
-Points - 0
-Highest piece - 4
-Time - 11
+5
+Points - 8
+Highest piece - 8
+Time - 16
 
-4
+5
 Points - 0
 Highest piece - 1
+Time - 16
+
+5
+Points - 28
+Highest piece - 16
 Time - 7
 
-4
+5
+Points - 204
+Highest piece - 32
+Time - 71
+
+5
 Points - 0
 Highest piece - 1
-Time - 1
-
-4
-Points - 0
-Highest piece - 4
-Time - 13
+Time - 11
 
 5
 Points - 0
 Highest piece - 4
-Time - 224
-
-5
-Points - 12
-Highest piece - 4
-Time - 12
-
-5
-Points - 112
-Highest piece - 32
-Time - 16
+Time - 20
 
