@@ -45,7 +45,9 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *);
 int MovPieceDown(int board[][MAX_BOARD_POS], int, int *, int *);
 int MovPieceLeft(int board[][MAX_BOARD_POS], int, int *, int *);
 int MovPieceRight(int board[][MAX_BOARD_POS], int, int *, int *);
+int CheckWin(int *, int, int, int board[][MAX_BOARD_POS]);
 void NewGame(int board[][MAX_BOARD_POS], int);
+void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *,int);
 
 // definition of some strings: they cannot be changed when the program is executed !
 const char myName[] = "Francisco Branco";
@@ -77,7 +79,7 @@ int main( int argc, char* args[] )
 
     int points = 0, max_points = 0, max_pc = 0, game_time = 0;
 
-    int test = 0;
+    int test = 0, win;
 
     max_points = 0;
 
@@ -108,6 +110,7 @@ int main( int argc, char* args[] )
 
     while( quit == 0 )
     {
+        if(win != 0) game = 0;
         if(game == 1) game_time = time(NULL) - begin;
         // while there's events to handle
         while( SDL_PollEvent( &event ) )
@@ -134,6 +137,7 @@ int main( int argc, char* args[] )
 
                         points = 0;
                         max_pc = 0;
+                        win = 0;
 
                         // Variable which decides when the game starts
                         game = 1;
@@ -148,7 +152,11 @@ int main( int argc, char* args[] )
                             printf("Up\n");
                             test = MovPieceUp(board, board_size, &points, &max_pc);
 
-                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                            if(test != 0) 
+                            {
+                                GenPiece(board, board_size, &max_pc);
+                                win = CheckWin(&max_pc, difficulty, board_size, board);
+                            }
                         }
 
                         break;
@@ -159,7 +167,11 @@ int main( int argc, char* args[] )
                             printf("Down\n");
                             test = MovPieceDown(board, board_size, &points, &max_pc);
 
-                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                            if(test != 0) 
+                            {
+                                GenPiece(board, board_size, &max_pc);
+                                win = CheckWin(&max_pc, difficulty, board_size, board);
+                            }
                         }
 
                         break;
@@ -170,7 +182,11 @@ int main( int argc, char* args[] )
                             printf("Left\n");
                             test = MovPieceLeft(board, board_size, &points, &max_pc);
 
-                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                            if(test != 0) 
+                            {
+                                GenPiece(board, board_size, &max_pc);
+                                win =CheckWin(&max_pc, difficulty, board_size, board);
+                            }
                         }
 
                         break;
@@ -181,7 +197,11 @@ int main( int argc, char* args[] )
                             printf("Right\n");
                             test = MovPieceRight(board, board_size, &points, &max_pc);
 
-                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                            if(test != 0)
+                            {   
+                                GenPiece(board, board_size, &max_pc);
+                                win = CheckWin(&max_pc, difficulty, board_size, board);
+                            }
                         }
 
                         break;
@@ -197,10 +217,10 @@ int main( int argc, char* args[] )
         RenderTable(board_size, &board_size_px, &square_size_px, serif, imgs, renderer);
         // render board 
         RenderBoard(board, array_of_numbers, board_size, board_size_px, square_size_px, renderer);
-
-        printf("%d\n", game_time);
         // renders stats
         RenderStats(renderer, serif, difficulty, points, game_time);
+        // renders win/lose rectangle
+        if(win != 0) RenderInfoRect(renderer, serif,win);
         // render in the screen all changes above
         SDL_RenderPresent(renderer);
         // add a delay
@@ -474,7 +494,7 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 
                     printf("points = %d", *points);
 
-                    if(*max_pc < board[i][l]) *max_pc = board[i][l];
+                    if(*max_pc < board[l][j]) *max_pc = board[l][j];
 
                     // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
                     test = 1;
@@ -525,7 +545,7 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
 
                     printf("points = %d", *points);
 
-                    if(*max_pc < board[i][l]) *max_pc = board[i][l];
+                    if(*max_pc < board[l][j]) *max_pc = board[l][j];
 
                     // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
                     test = 1;
@@ -540,6 +560,36 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
     }
 
     return test;
+}
+
+/*
+*
+*/
+int CheckWin(int *max_pc, int _difficulty, int _board_size, int board[][MAX_BOARD_POS])
+{
+    int i, j;
+
+    if(*max_pc == _difficulty) return 1;
+
+    for(i = 0; i < _board_size; i++)
+    {
+        for(j = 0; j < _board_size; j++)
+        {
+            if(board[i][j] != 0)
+            {
+                if(i - 1 >= 0 && board[i][j] == board[i - 1][j]) return 0;
+
+                if(i + 1 < _board_size && board[i][j] == board[i + 1][j]) return 0;
+
+                if(j - 1 >= 0 && board[i][j] == board[i][j - 1]) return 0;
+
+                if(j + 1 < _board_size && board[i][j] == board[i][j + 1]) return 0;
+            }
+            else return 0;
+        }
+    }
+
+    return -1;
 }
 
 /* NewGame: creates a new game. Points and time reset 
@@ -573,8 +623,37 @@ void SaveResults(char name[STRING_SIZE], int points, int max_pc, int game_time)
     fclose(results);
 }
 
+/*  RenderInfoRect:
+*
+*/
+void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *_font, int _win)
+{
+    SDL_Rect info_rect;
 
+    SDL_Color black = {0, 0, 0};
 
+    if(_win == 1) SDL_SetRenderDrawColor(_renderer, 0, 255, 0, 200 );
+    else SDL_SetRenderDrawColor(_renderer, 255, 0, 0, 200 );
+    info_rect.x = 175;
+    info_rect.y = 250;
+    info_rect.w = 300;
+    info_rect.h = 300;
+    SDL_RenderFillRect(_renderer, &info_rect);
+
+    if(_win == 1)
+    {
+        char status[] = "YOU WON!";
+
+        RenderText(280, 380, status, _font, &black, _renderer);
+    }
+
+    else
+    {
+        char status[] = "YOU LOST!";
+
+        RenderText(280, 380, status, _font, &black, _renderer);
+    }
+}
 
 
 
