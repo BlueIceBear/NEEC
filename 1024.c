@@ -41,12 +41,12 @@ void Parameters(int *, char *, int*);
 void SaveResults(char name[STRING_SIZE] , int, int, int);
 void GenStart(int board[][MAX_BOARD_POS], int, int *);
 void GenPiece(int board[][MAX_BOARD_POS], int, int *);
-int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *, int last_board[][MAX_BOARD_POS]);
-int MovPieceDown(int board[][MAX_BOARD_POS], int, int *, int *, int last_board[][MAX_BOARD_POS]);
-int MovPieceLeft(int board[][MAX_BOARD_POS], int, int *, int *, int last_board[][MAX_BOARD_POS]);
-int MovPieceRight(int board[][MAX_BOARD_POS], int, int *, int *, int last_board[][MAX_BOARD_POS]);
-void CopyPlay();
-int Undo();
+int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceDown(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceLeft(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceRight(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+void CopyPlay(int board[][MAX_BOARD_POS], int, int last_board[][MAX_BOARD_POS]);
+int Undo(int board[][MAX_BOARD_POS], int, int *, int, int last_board[][MAX_BOARD_POS]);
 int CheckWin(int *, int, int, int board[][MAX_BOARD_POS]);
 void NewGame(int board[][MAX_BOARD_POS], int);
 void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *,int);
@@ -82,11 +82,11 @@ int main( int argc, char* args[] )
     char name[STRING_SIZE];
     int difficulty;
 
-    int game = 0, begin =0;
+    int game = 0, begin = 0;
 
     int points = 0, max_points = 0, max_pc = 0, game_time = 0;
 
-    int test = 0, win, has_undo = 0;
+    int test = 0, win, has_undo = 0, last_points = 0;
 
     max_points = 0;
 
@@ -153,14 +153,14 @@ int main( int argc, char* args[] )
                         break;
 
                     case SDLK_u:
-                        if(has_undo == 0) has_undo = Undo(board, board_size, last_board);
+                        if(has_undo == 0) has_undo = Undo(board, board_size, &points, last_points, last_board);
                         break;
 
                     case SDLK_UP:
                         if(game == 1)
                         {
                             printf("Up\n");
-                            test = MovPieceUp(board, board_size, &points, &max_pc, last_board);
+                            test = MovPieceUp(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0) 
                             {
@@ -176,7 +176,7 @@ int main( int argc, char* args[] )
                         if(game == 1)
                         {
                             printf("Down\n");
-                            test = MovPieceDown(board, board_size, &points, &max_pc, last_board);
+                            test = MovPieceDown(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0) 
                             {
@@ -192,7 +192,7 @@ int main( int argc, char* args[] )
                         if(game == 1)
                         {
                             printf("Left\n");
-                            test = MovPieceLeft(board, board_size, &points, &max_pc, last_board);
+                            test = MovPieceLeft(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0) 
                             {
@@ -208,7 +208,7 @@ int main( int argc, char* args[] )
                         if(game == 1)
                         {
                             printf("Right\n");
-                            test = MovPieceRight(board, board_size, &points, &max_pc, last_board);
+                            test = MovPieceRight(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0)
                             {   
@@ -377,7 +377,7 @@ void GenPiece(int board[][MAX_BOARD_POS], int _board_size, int *max_pc)
 /* MovPieceUp: Caculates the movements of the pieces on the board, including adding pieces
 *  The board's matrix and it's size
 */
-int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
 
@@ -412,6 +412,8 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *ma
                     board[i][l + 1] = 0;
                     board[i][l] += 1;
 
+                    *last_points = *points;
+
                     *points += pow(2, board[i][l]);
 
                     printf("points = %d\n", *points);
@@ -435,7 +437,7 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *ma
 /* MovPieceDown: Caculates the movements of the pieces on the board
 *  The board's matrix and it's size
 */
-int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
 
@@ -470,6 +472,8 @@ int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
                     board[i][l - 1] = 0;
                     board[i][l] += 1;
 
+                    *last_points = *points;
+
                     *points += pow(2, board[i][l]);
 
                     printf("points = %d", *points);
@@ -491,7 +495,7 @@ int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 /* MovPieceLeft: Caculates the movements of the pieces on the board
 *  The board's matrix and it's size
 */
-int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
 
@@ -526,6 +530,8 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
                     board[l + 1][j] = 0;
                     board[l][j] += 1;
 
+                    *last_points = *points;
+
                     *points += pow(2, board[l][j]);
 
                     printf("points = %d", *points);
@@ -547,7 +553,7 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 /* MovPieceRight: Caculates the movements of the pieces on the board
 *  The board's matrix and it's size
 */
-int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
 
@@ -581,6 +587,8 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
                 {
                     board[l - 1][j] = 0;
                     board[l][j] += 1;
+
+                    *last_points = *points;
 
                     *points += pow(2, board[l][j]);
 
@@ -619,7 +627,7 @@ void CopyPlay(int board[][MAX_BOARD_POS], int _board_size, int last_board[][MAX_
 /*
 *
 */
-int Undo(int board[][MAX_BOARD_POS], int _board_size, int last_board[][MAX_BOARD_POS])
+int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_points, int last_board[][MAX_BOARD_POS])
 {
     int i, j;
 
@@ -630,6 +638,8 @@ int Undo(int board[][MAX_BOARD_POS], int _board_size, int last_board[][MAX_BOARD
             board[i][j] = last_board[i][j];
         }
     }
+
+    *points = last_points;
 
     return 1;
 }
