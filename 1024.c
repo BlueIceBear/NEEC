@@ -28,7 +28,7 @@ int RenderText(int, int, const char *, TTF_Font *, SDL_Color *, SDL_Renderer *);
 int RenderLogo(int, int, SDL_Surface *, SDL_Renderer *);
 void RenderTable(int, int *, int *, TTF_Font *, SDL_Surface **, SDL_Renderer *);
 void RenderBoard(int [][MAX_BOARD_POS], SDL_Surface **, int, int, int, SDL_Renderer *);
-void RenderStats( SDL_Renderer *, int , int , int );
+void RenderStats( SDL_Renderer *, TTF_Font *, int , int , int );
 void LoadValues(SDL_Surface **);
 void UnLoadValues(SDL_Surface **);
 
@@ -38,10 +38,14 @@ void UnLoadValues(SDL_Surface **);
 */
 
 void Parameters(int *, char *, int*);
-void SaveResults(char * , int, int, int);
-void GenStart(int board[][MAX_BOARD_POS], int);
-void GenPiece(int board[][MAX_BOARD_POS], int);
-void NewGame();
+void SaveResults(char name[STRING_SIZE] , int, int, int);
+void GenStart(int board[][MAX_BOARD_POS], int, int *);
+void GenPiece(int board[][MAX_BOARD_POS], int, int *);
+int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *);
+int MovPieceDown(int board[][MAX_BOARD_POS], int, int *, int *);
+int MovPieceLeft(int board[][MAX_BOARD_POS], int, int *, int *);
+int MovPieceRight(int board[][MAX_BOARD_POS], int, int *, int *);
+void NewGame(int board[][MAX_BOARD_POS], int);
 
 // definition of some strings: they cannot be changed when the program is executed !
 const char myName[] = "Francisco Branco";
@@ -69,19 +73,25 @@ int main( int argc, char* args[] )
     char name[STRING_SIZE];
     int difficulty;
 
+    int game = 0, begin =0;
+
     int points = 0, max_points = 0, max_pc = 0, game_time = 0;
 
+    int test = 0;
 
-    /*
+    max_points = 0;
+
+
+    
     // some examples
-    board[0][0] = 1;
-    board[2][0] = 2;
-    board[3][3] = 3;
-    board[4][4] = 4;
-    board[4][0] = 5;
-    board[3][0] = 8;
-    board[0][1] = 10;
-    */
+    //board[1][0] = 1;
+    //board[1][2] = 2;
+    //board[3][3] = 3;
+    //board[4][4] = 4;
+    //board[4][0] = 5;
+    //board[3][0] = 8;
+    //board[0][1] = 10;
+    
 
     // Initializes the function rand()
     srand(time(NULL));
@@ -89,18 +99,16 @@ int main( int argc, char* args[] )
     // Asks for parameters
     Parameters(&board_size, name, &difficulty);
 
-    // Starts the generation of the first pieces of the board
-    GenStart(board, board_size);
-
     // initialize graphics
     InitEverything(width, height, &serif, imgs, &window, &renderer);
     // loads numbers as images
     LoadValues(array_of_numbers);
 
+    begin = time(NULL);
+
     while( quit == 0 )
     {
-
-
+        if(game == 1) game_time = time(NULL) - begin;
         // while there's events to handle
         while( SDL_PollEvent( &event ) )
         {
@@ -115,29 +123,84 @@ int main( int argc, char* args[] )
                     case SDLK_q:
                         quit = 1;
                         break;
-
+                
                     case SDLK_n:
-                        NewGame();
+                        begin = time(NULL);
+
+                        if(game == 1) SaveResults(name, points, max_pc, game_time);
+
+                        NewGame(board, board_size);
+                        GenStart(board, board_size, &max_pc);
+
+                        points = 0;
+                        max_pc = 0;
+
+                        // Variable which decides when the game starts
+                        game = 1;
+                        break;
 
                     case SDLK_u:
+                        break;
 
                     case SDLK_UP:
-                        GenPiece(board, board_size);
+                        if(game == 1)
+                        {
+                            printf("Up\n");
+                            test = MovPieceUp(board, board_size, &points, &max_pc);
+
+                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                        }
+
+                        break;
+
                     case SDLK_DOWN:
-                        GenPiece(board, board_size);
+                        if(game == 1)
+                        {
+                            printf("Down\n");
+                            test = MovPieceDown(board, board_size, &points, &max_pc);
+
+                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                        }
+
+                        break;
+                    
                     case SDLK_LEFT:
-                        GenPiece(board, board_size);
+                        if(game == 1)
+                        {
+                            printf("Left\n");
+                            test = MovPieceLeft(board, board_size, &points, &max_pc);
+
+                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                        }
+
+                        break;
+                    
                     case SDLK_RIGHT:
-                        GenPiece(board, board_size);
+                        if(game == 1)
+                        {
+                            printf("Right\n");
+                            test = MovPieceRight(board, board_size, &points, &max_pc);
+
+                            if(test != 0) GenPiece(board, board_size, &max_pc);
+                        }
+
+                        break;
+                    
                     default:
                         break;
+                    
                 }
             }
         }
+
         // render game table
-        RenderTable( board_pos, &board_size_px, &square_size_px, serif, imgs, renderer);
+        RenderTable(board_size, &board_size_px, &square_size_px, serif, imgs, renderer);
         // render board 
-        RenderBoard(board, array_of_numbers, board_pos, board_size_px, square_size_px, renderer);
+        RenderBoard(board, array_of_numbers, board_size, board_size_px, square_size_px, renderer);
+
+        printf("%d\n", game_time);
+        // renders stats
+        RenderStats(renderer, serif, difficulty, points, game_time);
         // render in the screen all changes above
         SDL_RenderPresent(renderer);
         // add a delay
@@ -152,6 +215,10 @@ int main( int argc, char* args[] )
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
+    game_time = time(NULL) - begin;
+
+    max_pc = pow(2, max_pc);
 
     SaveResults(name, points, max_pc, game_time);
 
@@ -212,9 +279,10 @@ void Parameters(int *_board_size, char *_name, int *_difficulty)
     *_difficulty = difficulty;
 }
 
-/* GenStart: generates the start of the game 
+/* GenStart: generates the start of the game
+*  The board's matrix and it's size
 */
-void GenStart(int board[][MAX_BOARD_POS], int _board_size)
+void GenStart(int board[][MAX_BOARD_POS], int _board_size, int *max_pc)
 {
     int pos1, pos2, pos3, pos4, val;
 
@@ -223,9 +291,10 @@ void GenStart(int board[][MAX_BOARD_POS], int _board_size)
     pos2 = rand() % _board_size;
 
     val = (rand() % 2) + 1;
-    printf("val1 = %d\n", val);
 
     board[pos1][pos2] = val;
+
+    if(*max_pc < val) *max_pc = val;
 
     // We need to be sure that the two first pieces don't overlap
     while(1)
@@ -237,15 +306,16 @@ void GenStart(int board[][MAX_BOARD_POS], int _board_size)
     }
 
     val = (rand() % 2) + 1;
-    printf("val2 = %d\n", val);
 
     board[pos3][pos4] = val;
+
+    if(*max_pc < val) *max_pc = val;
 }
 
 /* GenPiece: Generates a new piece on the board
 *  The board's matrix and it's size
 */
-void GenPiece(int board[][MAX_BOARD_POS], int _board_size)
+void GenPiece(int board[][MAX_BOARD_POS], int _board_size, int *max_pc)
 {
     int pos1 = 0, pos2 = 0, val, aux = 1;
 
@@ -261,39 +331,247 @@ void GenPiece(int board[][MAX_BOARD_POS], int _board_size)
     val = (rand() % 2) + 1;
 
     board[pos1][pos2] = val;
+
+    if(*max_pc < val) *max_pc = val;
 }
 
-/* MovPiece: Caculates the movements of the pieces on the board
-*
-*/
-void MovPiece()
-{
 
+/* MovPieceUp: Caculates the movements of the pieces on the board, including adding pieces
+*  The board's matrix and it's size
+*/
+int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc)
+{
+    int i, j, l, aux, test = 0;
+
+    for(i = 0; i < _board_size; i++)
+    {
+        printf("i = %d\n", i);
+        for(j = 0; j < _board_size; j++)
+        {
+            printf("j = %d\n", j);
+            if(board[i][j] != 0)
+            {
+                aux = board[i][j];
+
+                // other variables to increment: l
+                for(l = j - 1; l >= 0 && board[i][l] == 0; l--){}
+
+                // substitution of the values so the piece appears to move
+                board[i][j] = 0;
+                board[i][l + 1] = aux;
+
+                // Verifies if there are pieces to be added
+                if(l > -1 && board[i][l + 1] == board[i][l] && board[i][l] != 0)
+                {
+                    board[i][l + 1] = 0;
+                    board[i][l] += 1;
+
+                    *points += pow(2, board[i][l]);
+
+                    printf("points = %d\n", *points);
+
+                    if(*max_pc < board[i][l]) *max_pc = board[i][l];
+
+                    // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
+                    test = 1;
+                }
+
+                // tests if a piece moved or not
+                if(j != l + 1) test = 1;
+
+                printf("i,l + 1= %d %d\n", i, l + 1);
+            }
+        }
+    }
+
+    return test;
+}
+
+
+
+/* MovPieceDown: Caculates the movements of the pieces on the board
+*  The board's matrix and it's size
+*/
+int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc)
+{
+    int i, j, l, aux, test = 0;
+
+    for(i = 0; i < _board_size; i++)
+    {
+        printf("i = %d\n", i);
+        for(j = _board_size - 1; j >= 0; j--)
+        {
+            printf("j = %d\n", j);
+            if(board[i][j] != 0)
+            {
+                aux = board[i][j];
+
+                // other variables to increment: l
+                for(l = j + 1; l < _board_size && board[i][l] == 0; l++)
+
+                // substitution of the values so the piece appears to move
+                board[i][j] = 0;
+                board[i][l - 1] = aux;
+
+                // Verifies if there are pieces to be added
+                if(l < _board_size && board[i][l - 1] == board[i][l] && board[i][l] != 0) 
+                {
+                    board[i][l - 1] = 0;
+                    board[i][l] += 1;
+
+                    *points += pow(2, board[i][l]);
+
+                    printf("points = %d", *points);
+
+                    if(*max_pc < board[i][l]) *max_pc = board[i][l];
+
+                    // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
+                    test = 1;
+                }
+
+                // tests if a piece moved or not
+                if(j != l - 1) test = 1;
+
+                printf("i,l - 1= %d %d\naux = %d\n", i, l - 1, aux);
+            }
+        }
+    }
+
+    return test;
+}
+
+/* MovPieceLeft: Caculates the movements of the pieces on the board
+*  The board's matrix and it's size
+*/
+int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc)
+{
+    int i, j, l, aux, test = 0;
+
+    for(i = 0; i < _board_size; i++)
+    {
+        printf("i = %d\n", i);
+        for(j = 0; j < _board_size; j++)
+        {
+            printf("j = %d\n", j);
+            if(board[i][j] != 0)
+            {
+                aux = board[i][j];
+
+                // other variables to increment: l
+                for(l = i - 1; l >= 0 && board[l][j] == 0; l--)
+
+                // substitution of the values so the piece appears to move
+                board[i][j] = 0;
+                board[l + 1][j] = aux;
+
+                // Verifies if there are pieces to be added
+                if(l > -1 && board[l + 1][j] == board[l][j] && board[l][j] != 0) 
+                {
+                    board[l + 1][j] = 0;
+                    board[l][j] += 1;
+
+                    *points += pow(2, board[l][j]);
+
+                    printf("points = %d", *points);
+
+                    if(*max_pc < board[i][l]) *max_pc = board[i][l];
+
+                    // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
+                    test = 1;
+                }
+
+                // tests if a piece moved or not
+                if(i != l + 1) test = 1;
+
+                printf("j,l + 1= %d %d", j, l + 1);
+            }
+        }
+    }
+
+    return test;
+}
+
+/* MovPieceRight: Caculates the movements of the pieces on the board
+*  The board's matrix and it's size
+*/
+int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int *max_pc)
+{
+    int i, j, l, aux, test = 0;
+
+    for(i = _board_size; i >= 0; i--)
+    {
+        printf("i = %d\n", i);
+        for(j = 0; j < _board_size; j++)
+        {
+            printf("j = %d\n", j);
+            if(board[i][j] != 0)
+            {
+                aux = board[i][j];
+
+                // other variables to increment: l
+                for(l = i + 1; l < _board_size && board[l][j] == 0; l++) {}
+
+                // substitution of the values so the piece appears to move
+                board[i][j] = 0;
+                board[l - 1][j] = aux;
+
+                // Verifies if there are pieces to be added
+                if(l < _board_size && board[l - 1][j] == board[l][j] && board[l][j] != 0) 
+                {
+                    board[l - 1][j] = 0;
+                    board[l][j] += 1;
+
+                    *points += pow(2, board[l][j]);
+
+                    printf("points = %d", *points);
+
+                    if(*max_pc < board[i][l]) *max_pc = board[i][l];
+
+                    // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
+                    test = 1;
+                }
+
+                // tests if a piece moved or not
+                if(i != l - 1) test = 1;
+
+                printf("i,l + 1= %d %d", i, l + 1);
+            }
+        }
+    }
+
+    return test;
 }
 
 /* NewGame: creates a new game. Points and time reset 
+*  The board's matrix and size
 */
-void NewGame()
+void NewGame(int board[][MAX_BOARD_POS], int _board_size)
 {
+    int i, j;
 
+    for(i = 0; i < _board_size; i++)
+    {
+        for(j = 0; j < _board_size; j++)
+        {
+            board[i][j] = 0;
+        }
+    }
 }
 
 
 /* SaveResults: Writes or creates if necessary, a file with all the player's stats
 *  Player's name, points, the highest piece they achieved and the total game time
 */
-void SaveResults(char *name, int points, int max_pc, int game_time)
+void SaveResults(char name[STRING_SIZE], int points, int max_pc, int game_time)
 {
     FILE *results;
 
-    results = fopen("stats.txt", "w");
+    results = fopen("stats.txt", "a");
 
-    fprintf(results, "%s\nPoints - %d\nHighest piece - %d\nTime - %d", name, points, max_pc, game_time);
+    fprintf(results, "%s\nPoints - %d\nHighest piece - %d\nTime - %d\n\n", name, points, max_pc, game_time);
 
     fclose(results);
 }
-
-
 
 
 
@@ -397,9 +675,17 @@ void RenderBoard(int _board[][MAX_BOARD_POS], SDL_Surface **_array_of_numbers, i
  * \param _score actual score
  * \param _time time to display in seconds
  */
-void RenderStats( SDL_Renderer *_renderer, int _level, int _score, int _time )
+void RenderStats( SDL_Renderer *_renderer, TTF_Font *_font, int _level, int _score, int _time )
 {
-    /* To Be Done */
+    char info[STRING_SIZE];
+
+    SDL_Color orange = {255, 150, 0};
+
+    _level = pow(2, _level);
+
+    sprintf(info,"Level: %d                          Score: %d                              Time: %d", _level, _score, _time);
+
+    RenderText(120, 150, info, _font, &orange, _renderer);
 }
 
 /*
