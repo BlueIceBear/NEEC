@@ -1,5 +1,9 @@
+JB
+Points - 296
+Highest piece - 64
+Time - 67
 
-Points - 44
-Highest piece - 4
-Time - 25
+Points - 316
+Highest piece - 64
+Time - 71
 

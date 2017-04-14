@@ -19,7 +19,7 @@
 #define MARGIN 5
 
 // declaration of the functions related to graphical issues
-void InitEverything(int , int , TTF_Font **, SDL_Surface **, SDL_Window ** , SDL_Renderer ** );
+void InitEverything(int , int , TTF_Font **, TTF_Font **, SDL_Surface **, SDL_Window ** , SDL_Renderer ** );
 void InitSDL();
 void InitFont();
 SDL_Window* CreateWindow(int , int );
@@ -50,8 +50,8 @@ int Undo(int board[][MAX_BOARD_POS], int, int *, int, int last_board[][MAX_BOARD
 int CheckWin(int *, int, int, int board[][MAX_BOARD_POS]);
 void NewGame(int board[][MAX_BOARD_POS], int);
 void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *,int);
-int Load(int board[][MAX_BOARD_POS], int *, char name[STRING_SIZE], int *, int *);
-void Save(int board[][MAX_BOARD_POS], int, char name[STRING_SIZE], int, int, int);
+int Load(int board[][MAX_BOARD_POS], int *, char name[STRING_SIZE], int *, int *, int *);
+void Save(int board[][MAX_BOARD_POS], int, char name[STRING_SIZE], int, int, int, int);
 
 
 // definition of some strings: they cannot be changed when the program is executed !
@@ -66,7 +66,7 @@ int main( int argc, char* args[] )
 {
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
-    TTF_Font *serif = NULL;
+    TTF_Font *serif = NULL, *sans = NULL;
     SDL_Surface *array_of_numbers[MAX_LEVELS], *imgs[2];
     SDL_Event event;
     int delay = 300;
@@ -85,25 +85,23 @@ int main( int argc, char* args[] )
 
     int i = 0, game = 0;
 
-    int points = 0, max_points = 0, max_pc = 0, game_time = 0, begin = 0, baggage = 0;
+    int points = 0, max_pc = 0, game_time = 0, begin = 0, baggage = 0;
 
-    int test = 0, win, has_undo = 0, last_points = 0;
+    int test = 0, win, has_undo = 0, first = 0, last_points = 0;
 
-    max_points = 0;
+
+
 
 
 
     // Initializes the function rand()
     srand(time(NULL));
 
-    // Clears all previous stats
-    remove("stats.txt");
-
-    printf("Resume game?(y/n)\n");
+    printf("Resume game?(y/n)");
     scanf("%c", &answer);
 
     // Loads the game if there is a game to be resumed (same parameters as the previous)
-    baggage = Load(board, &board_size, name, &points, &max_pc);
+    baggage = Load(board, &board_size, name, &difficulty, &points, &max_pc);
 
     game_time = baggage;
 
@@ -111,7 +109,7 @@ int main( int argc, char* args[] )
     if(answer == 'n' || max_pc == 0) Parameters(&board_size, name, &difficulty);
 
     // initialize graphics
-    InitEverything(width, height, &serif, imgs, &window, &renderer);
+    InitEverything(width, height, &serif, &sans, imgs, &window, &renderer);
     // loads numbers as images
     LoadValues(array_of_numbers);
 
@@ -120,9 +118,14 @@ int main( int argc, char* args[] )
     while( quit == 0 )
     {
         // If the player won or lost, the game stops
-        if(win != 0) game = 0;
+        if(win != 0) 
+        {
+            game = 0;
+            baggage = 0;
+        }
         // The game only counts the time if the game is active
         if(game == 1) game_time = time(NULL) - begin + baggage;
+
 
         // while there's events to handle
         while( SDL_PollEvent( &event ) )
@@ -142,39 +145,52 @@ int main( int argc, char* args[] )
                     case SDLK_n:
                         begin = time(NULL);
 
-                        if(baggage == 0)
-                        {
-                            if(game == 1)
+                            // Saves the stat's vector for the writing of all the stats in a file
+                            if(baggage == 0)
                             {
-                                vec_stats[i] = points;
-                                vec_stats[i + 1] = max_pc;
-                                vec_stats[i + 2] = game_time;
-                                i += 3;
+                                if(first != 0)
+                                {
+                                    printf("%d\n", i);
+                                    vec_stats[i] = points;
+                                    printf("%d\n", points);
+                                    vec_stats[i + 1] = max_pc;
+                                    printf("%d\n", max_pc);
+                                    vec_stats[i + 2] = game_time;
+                                    printf("%d\n", game_time);
+                                    i += 3;
+                                }
+
+                                NewGame(board, board_size);
+                                GenStart(board, board_size, &max_pc);
+
+                                // Restarts variables
+                                points = 0;
+                                max_pc = 0;
+                                win = 0;
                             }
 
-                            NewGame(board, board_size);
-                            GenStart(board, board_size, &max_pc);
-
-                            // Restarts variables
-                            points = 0;
-                            max_pc = 0;
-                            win = 0;
-                        }
 
                         // Variable which decides when the game starts
                         game = 1;
+                        // Says that the button n has been pushed, so that the vector is saved with new games
+                        first = 1;
                         break;
 
                     case SDLK_u:
-                        if(has_undo == 0) has_undo = Undo(board, board_size, &points, last_points, last_board);
+                        // Verifies if the game has already undo once, and if not, undos
+                        if(game == 1)
+                        {
+                            if(has_undo == 0) has_undo = Undo(board, board_size, &points, last_points, last_board);
+                        }
                         break;
 
                     case SDLK_UP:
                         if(game == 1)
                         {
-                            printf("Up\n");
+                            // Moves piece if possible
                             test = MovPieceUp(board, board_size, &points, &last_points, &max_pc, last_board);
 
+                            // Generates another piece, puts undo ready and checks if the player won
                             if(test != 0) 
                             {
                                 GenPiece(board, board_size, &max_pc);
@@ -188,7 +204,6 @@ int main( int argc, char* args[] )
                     case SDLK_DOWN:
                         if(game == 1)
                         {
-                            printf("Down\n");
                             test = MovPieceDown(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0) 
@@ -204,7 +219,6 @@ int main( int argc, char* args[] )
                     case SDLK_LEFT:
                         if(game == 1)
                         {
-                            printf("Left\n");
                             test = MovPieceLeft(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0) 
@@ -220,7 +234,6 @@ int main( int argc, char* args[] )
                     case SDLK_RIGHT:
                         if(game == 1)
                         {
-                            printf("Right\n");
                             test = MovPieceRight(board, board_size, &points, &last_points, &max_pc, last_board);
 
                             if(test != 0)
@@ -245,7 +258,7 @@ int main( int argc, char* args[] )
         // render board 
         RenderBoard(board, array_of_numbers, board_size, board_size_px, square_size_px, renderer);
         // renders stats
-        RenderStats(renderer, serif, difficulty, points, game_time);
+        RenderStats(renderer, sans, difficulty, points, game_time);
         // renders win/lose rectangle
         if(win != 0) RenderInfoRect(renderer, serif,win);
         // render in the screen all changes above
@@ -254,14 +267,8 @@ int main( int argc, char* args[] )
         SDL_Delay( delay );
     }
 
-    vec_stats[i] = points;
-    vec_stats[i + 1] = max_pc;
-    vec_stats[i + 2] = game_time;
-    i += 3;
-
     // Saves the game if the game didn't end
-    if(win == 0) Save(board, board_size, name, points, max_pc, game_time);
-
+    if(win == 0) Save(board, board_size, name, difficulty, points, max_pc, game_time);
     else remove("save.txt");
 
     // free memory allocated for images and textures and closes everything including fonts
@@ -275,7 +282,17 @@ int main( int argc, char* args[] )
 
     game_time = time(NULL) - begin + baggage;
 
-    max_pc = pow(2, max_pc);
+    vec_stats[i] = points;
+    vec_stats[i + 1] = max_pc;
+    vec_stats[i + 2] = game_time;
+    i += 3;
+
+    for(int j = 0; j < i; j += 3)
+    {
+        printf("%d\n", vec_stats[j]);
+        printf("%d\n", vec_stats[j+1]);
+        printf("%d\n", vec_stats[j+2]);
+    }
 
     // Saves the game's stats
     SaveResults(name, vec_stats, i);
@@ -392,6 +409,11 @@ void GenPiece(int board[][MAX_BOARD_POS], int _board_size, int *max_pc)
 
     if(*max_pc < val) *max_pc = val;
 }
+
+
+
+
+/* Functions to calculate the piece's movement */
 
 
 /* MovPieceUp: Caculates the movements of the pieces on the board, including adding pieces
@@ -604,8 +626,15 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
     return test;
 }
 
-/*
-*
+
+
+
+
+
+
+
+/* CopyPlay: Copies the last play, to make the undo functionality work
+*  The board's matrix, the board's size and the last board before the current one
 */
 void CopyPlay(int board[][MAX_BOARD_POS], int _board_size, int last_board[][MAX_BOARD_POS])
 {
@@ -620,8 +649,8 @@ void CopyPlay(int board[][MAX_BOARD_POS], int _board_size, int last_board[][MAX_
     }
 }
 
-/*
-*
+/* Undo: Puts the board's pieces as the previous board's pieces
+*  The board's matrix, the board's size, game's points, previous points and the last board before the current one
 */
 int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_points, int last_board[][MAX_BOARD_POS])
 {
@@ -640,8 +669,8 @@ int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_poin
     return 1;
 }
 
-/*
-*
+/* CheckWin: Verifies if player has won or lost
+*  Highest piece achieved, difficulty, the board's size and matrix
 */
 int CheckWin(int *max_pc, int _difficulty, int _board_size, int board[][MAX_BOARD_POS])
 {
@@ -687,13 +716,13 @@ void NewGame(int board[][MAX_BOARD_POS], int _board_size)
 }
 
 /* SaveResults: Writes or creates if necessary, a file with all the player's stats
-*  Player's name, points, the highest piece they achieved and the total game time
+*  Player's name, points, a vector with their points, the highest piece they achieved and the total game time; also, the last position occupied in the vector
 */
 void SaveResults(char name[STRING_SIZE], int vec_stats[121], int i)
 {
-    int j;
+    int j, aux;
 
-    FILE *results;
+    FILE *results = NULL;
 
     results = fopen("stats.txt", "w");
 
@@ -704,34 +733,41 @@ void SaveResults(char name[STRING_SIZE], int vec_stats[121], int i)
     }
 
     fprintf(results, "%s\n", name);
+
     for(j = 0; j < i; j += 3)
     {
-        fprintf(results, "Points - %d\nHighest piece - %d\nTime - %d\n\n", vec_stats[j], pow(2, vec_stats[j + 1]), vec_stats[j + 2]);
+        aux = pow(2, vec_stats[j + 1]);
+        fprintf(results, "Points - %d\nHighest piece - %d\nTime - %d\n\n", vec_stats[j], aux, vec_stats[j + 2]);
     }
 
     fclose(results);
 }
 
-/*
-*
-*/
-int Load(int board[][MAX_BOARD_POS], int *board_size, char name[STRING_SIZE], int *points, int *max_pc)
-{
-    int i, j, aux, _points, _max_pc, baggage = 0;
 
-    FILE *file_save;
+
+/* Special functions implemented */
+
+
+/* Load: Loads the last saved game
+*  The board's martix, the board's size, the player's name, tha game's difficulty, points and highest piece achieved
+*/
+int Load(int board[][MAX_BOARD_POS], int *board_size, char name[STRING_SIZE], int *difficulty, int *points, int *max_pc)
+{
+    int i, j, _board_size, _difficulty, _points, _max_pc, baggage = 0;
+
+    FILE *file_save = NULL;
 
     file_save = fopen("save.txt", "r");
 
     if(file_save != NULL)
     {
-        fscanf(file_save,"%d", &aux);
-
         fscanf(file_save,"%s", name);
 
-        for(j = 0; j < aux; j++)
+        fscanf(file_save,"%d %d", &_board_size, &_difficulty);
+
+        for(j = 0; j < _board_size; j++)
         {
-            for(i = 0; i < aux; i++)
+            for(i = 0; i < _board_size; i++)
             {
                 fscanf(file_save,"%d", &board[i][j]);
             }
@@ -739,13 +775,10 @@ int Load(int board[][MAX_BOARD_POS], int *board_size, char name[STRING_SIZE], in
 
         fscanf(file_save,"%d %d %d", &_points, &_max_pc, &baggage);
 
-        *board_size = aux;
+        *board_size = _board_size;
+        *difficulty = _difficulty;
         *points = _points;
         *max_pc = _max_pc;
-
-        fclose(file_save);
-
-        return baggage;
     }
 
     fclose(file_save);
@@ -753,14 +786,14 @@ int Load(int board[][MAX_BOARD_POS], int *board_size, char name[STRING_SIZE], in
     return baggage;
 }
 
-/*
-*
+/* Save: saves the actual state of the game
+*  
 */
-void Save(int board[][MAX_BOARD_POS], int _board_size, char name[STRING_SIZE], int points, int max_pc, int game_time)
+void Save(int board[][MAX_BOARD_POS], int _board_size, char name[STRING_SIZE], int difficulty, int points, int max_pc, int game_time)
 {
     int i, j;
 
-    FILE *file_save;
+    FILE *file_save = NULL;
 
     file_save = fopen("save.txt", "w");
 
@@ -770,9 +803,9 @@ void Save(int board[][MAX_BOARD_POS], int _board_size, char name[STRING_SIZE], i
         exit(EXIT_FAILURE);
     }
 
-    fprintf(file_save,"%s", name);
+    fprintf(file_save,"%s\n", name);
 
-    fprintf(file_save,"%d\n", _board_size);
+    fprintf(file_save,"%d %d\n", _board_size, difficulty);
 
     for(j = 0; j < _board_size; j++)
     {
@@ -793,6 +826,10 @@ void Save(int board[][MAX_BOARD_POS], int _board_size, char name[STRING_SIZE], i
 
 
 
+/* Graphic's Developed */
+
+
+
 
 /*
  * Shows some information about the game:
@@ -806,19 +843,51 @@ void Save(int board[][MAX_BOARD_POS], int _board_size, char name[STRING_SIZE], i
  */
 void RenderStats( SDL_Renderer *_renderer, TTF_Font *_font, int _level, int _score, int _time )
 {
-    char info[STRING_SIZE];
+    char info1[STRING_SIZE], info2[STRING_SIZE], info3[STRING_SIZE];
 
-    SDL_Color orange = {255, 150, 0};
+    SDL_Color orange = {205, 105, 0};
+    SDL_Rect stats_rect1;
+    SDL_Rect stats_rect2;
+    SDL_Rect stats_rect3;
+
+    SDL_SetRenderDrawColor(_renderer, 225, 225, 225, 255 );
+    stats_rect1.x = 98;
+    stats_rect1.y = 135;
+    stats_rect1.w = 125;
+    stats_rect1.h = 35;
+    SDL_RenderFillRect(_renderer, &stats_rect1);
+
+
+    stats_rect2.x = 262;
+    stats_rect2.y = 135;
+    stats_rect2.w = 125;
+    stats_rect2.h = 35;
+    SDL_RenderFillRect(_renderer, &stats_rect2);
+
+
+    stats_rect3.x = 425;
+    stats_rect3.y = 135;
+    stats_rect3.w = 125;
+    stats_rect3.h = 35;
+    SDL_RenderFillRect(_renderer, &stats_rect3);
 
     _level = pow(2, _level);
 
-    sprintf(info,"Level: %d                          Score: %d                              Time: %d", _level, _score, _time);
+    sprintf(info1,"Level: %d", _level);
 
-    RenderText(120, 150, info, _font, &orange, _renderer);
+    sprintf(info2,"Score: %d", _score);
+
+    sprintf(info3,"Time: %d", _time);
+
+    RenderText(105, 140, info1, _font, &orange, _renderer);
+
+    RenderText(267, 140, info2, _font, &orange, _renderer);
+
+    RenderText(430, 140, info3, _font, &orange, _renderer);
 }
 
-/*  RenderInfoRect:
-*
+/*  RenderInfoRect: Renders the rectangles with the information if the player won or lost
+*   The renderer, font and the win variable
 */
 void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *_font, int _win)
 {
@@ -848,6 +917,17 @@ void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *_font, int _win)
         RenderText(280, 380, status, _font, &black, _renderer);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**
@@ -1092,7 +1172,7 @@ int RenderText(int x, int y, const char *text, TTF_Font *_font, SDL_Color *_colo
  * \param _window represents the window of the application
  * \param _renderer renderer to handle all rendering in a window
  */
-void InitEverything(int width, int height, TTF_Font **_font, SDL_Surface *_img[], SDL_Window** _window, SDL_Renderer** _renderer)
+void InitEverything(int width, int height, TTF_Font **_font1, TTF_Font **_font2, SDL_Surface *_img[], SDL_Window** _window, SDL_Renderer** _renderer)
 {
     InitSDL();
     InitFont();
@@ -1115,8 +1195,15 @@ void InitEverything(int width, int height, TTF_Font **_font, SDL_Surface *_img[]
         exit(EXIT_FAILURE);
     }
     // this opens (loads) a font file and sets a size
-    *_font = TTF_OpenFont("FreeSerif.ttf", 16);
-    if(!*_font)
+    *_font1 = TTF_OpenFont("FreeSerif.ttf", 16);
+    if(!*_font1)
+    {
+        printf("TTF_OpenFont: %s\n", TTF_GetError());
+        exit(EXIT_FAILURE);
+    }
+
+    *_font2 = TTF_OpenFont("OpenSans.ttf", 19);
+    if(!*_font2)
     {
         printf("TTF_OpenFont: %s\n", TTF_GetError());
         exit(EXIT_FAILURE);
