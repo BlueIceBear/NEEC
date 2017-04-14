@@ -1,50 +1,5 @@
-4
-Points - 0
-Highest piece - 4
-Time - 5
 
-2
-Points - 0
-Highest piece - 1
-Time - 2
-
-4
 Points - 44
-Highest piece - 16
-Time - 15
-
-5
-Points - 8
-Highest piece - 8
-Time - 16
-
-5
-Points - 0
-Highest piece - 1
-Time - 16
-
-5
-Points - 28
-Highest piece - 16
-Time - 7
-
-5
-Points - 204
-Highest piece - 32
-Time - 71
-
-5
-Points - 0
-Highest piece - 1
-Time - 11
-
-5
-Points - 0
 Highest piece - 4
-Time - 20
-
-5
-Points - 4
-Highest piece - 8
-Time - 29
+Time - 25
 

@@ -38,7 +38,7 @@ void UnLoadValues(SDL_Surface **);
 */
 
 void Parameters(int *, char *, int*);
-void SaveResults(char name[STRING_SIZE] , int, int, int);
+void SaveResults(char name[STRING_SIZE] , int vec_stats[121], int);
 void GenStart(int board[][MAX_BOARD_POS], int, int *);
 void GenPiece(int board[][MAX_BOARD_POS], int, int *);
 int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
@@ -50,8 +50,8 @@ int Undo(int board[][MAX_BOARD_POS], int, int *, int, int last_board[][MAX_BOARD
 int CheckWin(int *, int, int, int board[][MAX_BOARD_POS]);
 void NewGame(int board[][MAX_BOARD_POS], int);
 void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *,int);
-int Load(int board[][MAX_BOARD_POS], int, int *);
-void Save(int board[][MAX_BOARD_POS], int);
+int Load(int board[][MAX_BOARD_POS], int *, char name[STRING_SIZE], int *, int *);
+void Save(int board[][MAX_BOARD_POS], int, char name[STRING_SIZE], int, int, int);
 
 
 // definition of some strings: they cannot be changed when the program is executed !
@@ -78,37 +78,37 @@ int main( int argc, char* args[] )
 
     int last_board[MAX_BOARD_POS][MAX_BOARD_POS] = {{0}};
 
+    int vec_stats[121];
     int board_size;
-    char name[STRING_SIZE];
+    char name[STRING_SIZE], answer;
     int difficulty;
 
-    int game = 0, begin = 0;
+    int i = 0, game = 0;
 
-    int points = 0, max_points = 0, max_pc = 0, game_time = 0;
+    int points = 0, max_points = 0, max_pc = 0, game_time = 0, begin = 0, baggage = 0;
 
     int test = 0, win, has_undo = 0, last_points = 0;
 
     max_points = 0;
 
 
-    
-    // some examples
-    //board[1][0] = 1;
-    //board[1][2] = 2;
-    //board[3][3] = 3;
-    //board[4][4] = 4;
-    //board[4][0] = 5;
-    //board[3][0] = 8;
-    //board[0][1] = 10;
-
 
     // Initializes the function rand()
     srand(time(NULL));
 
-    // Asks for parameters
-    Parameters(&board_size, name, &difficulty);
+    // Clears all previous stats
+    remove("stats.txt");
 
-    game = Load(board, board_size, &game);
+    printf("Resume game?(y/n)\n");
+    scanf("%c", &answer);
+
+    // Loads the game if there is a game to be resumed (same parameters as the previous)
+    baggage = Load(board, &board_size, name, &points, &max_pc);
+
+    game_time = baggage;
+
+    // Asks for parameters (if answer = y and there is no game to resume, asks for parameters anyway)
+    if(answer == 'n' || max_pc == 0) Parameters(&board_size, name, &difficulty);
 
     // initialize graphics
     InitEverything(width, height, &serif, imgs, &window, &renderer);
@@ -119,8 +119,11 @@ int main( int argc, char* args[] )
 
     while( quit == 0 )
     {
+        // If the player won or lost, the game stops
         if(win != 0) game = 0;
-        if(game == 1) game_time = time(NULL) - begin;
+        // The game only counts the time if the game is active
+        if(game == 1) game_time = time(NULL) - begin + baggage;
+
         // while there's events to handle
         while( SDL_PollEvent( &event ) )
         {
@@ -139,14 +142,24 @@ int main( int argc, char* args[] )
                     case SDLK_n:
                         begin = time(NULL);
 
-                        if(game == 1) SaveResults(name, points, max_pc, game_time);
+                        if(baggage == 0)
+                        {
+                            if(game == 1)
+                            {
+                                vec_stats[i] = points;
+                                vec_stats[i + 1] = max_pc;
+                                vec_stats[i + 2] = game_time;
+                                i += 3;
+                            }
 
-                        NewGame(board, board_size);
-                        GenStart(board, board_size, &max_pc);
+                            NewGame(board, board_size);
+                            GenStart(board, board_size, &max_pc);
 
-                        points = 0;
-                        max_pc = 0;
-                        win = 0;
+                            // Restarts variables
+                            points = 0;
+                            max_pc = 0;
+                            win = 0;
+                        }
 
                         // Variable which decides when the game starts
                         game = 1;
@@ -241,7 +254,13 @@ int main( int argc, char* args[] )
         SDL_Delay( delay );
     }
 
-    if(win == 0) Save(board, board_size);
+    vec_stats[i] = points;
+    vec_stats[i + 1] = max_pc;
+    vec_stats[i + 2] = game_time;
+    i += 3;
+
+    // Saves the game if the game didn't end
+    if(win == 0) Save(board, board_size, name, points, max_pc, game_time);
 
     else remove("save.txt");
 
@@ -254,11 +273,12 @@ int main( int argc, char* args[] )
     SDL_DestroyWindow(window);
     SDL_Quit();
 
-    game_time = time(NULL) - begin;
+    game_time = time(NULL) - begin + baggage;
 
     max_pc = pow(2, max_pc);
 
-    SaveResults(name, points, max_pc, game_time);
+    // Saves the game's stats
+    SaveResults(name, vec_stats, i);
 
     return EXIT_SUCCESS;
 }
@@ -273,7 +293,7 @@ int main( int argc, char* args[] )
 /* Parameters: Asks the user for the required parameters for the game to work 
 *  Board size, player's name and difficulty
 */
-void Parameters(int *_board_size, char *_name, int *_difficulty)
+void Parameters(int *_board_size, char name[STRING_SIZE], int *_difficulty)
 {
     int var = 0;
 
@@ -295,9 +315,9 @@ void Parameters(int *_board_size, char *_name, int *_difficulty)
     while(var == 0)
     {
         printf("\nChoose your name: ");
-        scanf("%s", _name);
+        scanf("%s", name);
 
-        if(strlen(_name) > 8 || strlen(_name) < 1) printf("The name must have at least 8 characters.\n");
+        if(strlen(name) > 8 || strlen(name) < 1) printf("The name must have at least 8 characters.\n");
         else var = 1;
     }
 
@@ -383,10 +403,8 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *la
 
     for(i = 0; i < _board_size; i++)
     {
-        printf("i = %d\n", i);
         for(j = 0; j < _board_size; j++)
         {
-            printf("j = %d\n", j);
             if(board[i][j] != 0)
             {
                 aux = board[i][j];
@@ -416,15 +434,11 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *la
 
                     *points += pow(2, board[i][l]);
 
-                    printf("points = %d\n", *points);
-
                     if(*max_pc < board[i][l]) *max_pc = board[i][l];
 
                     // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
                     test = 1;
                 }
-
-                printf("i,l + 1= %d %d\n", i, l + 1);
             }
         }
     }
@@ -443,10 +457,8 @@ int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 
     for(i = 0; i < _board_size; i++)
     {
-        printf("i = %d\n", i);
         for(j = _board_size - 1; j >= 0; j--)
         {
-            printf("j = %d\n", j);
             if(board[i][j] != 0)
             {
                 aux = board[i][j];
@@ -476,15 +488,11 @@ int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 
                     *points += pow(2, board[i][l]);
 
-                    printf("points = %d", *points);
-
                     if(*max_pc < board[i][l]) *max_pc = board[i][l];
 
                     // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
                     test = 1;
                 }
-
-                printf("i,l - 1= %d %d\naux = %d\n", i, l - 1, aux);
             }
         }
     }
@@ -501,10 +509,8 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 
     for(i = 0; i < _board_size; i++)
     {
-        printf("i = %d\n", i);
         for(j = 0; j < _board_size; j++)
         {
-            printf("j = %d\n", j);
             if(board[i][j] != 0)
             {
                 aux = board[i][j];
@@ -534,15 +540,11 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 
                     *points += pow(2, board[l][j]);
 
-                    printf("points = %d", *points);
-
                     if(*max_pc < board[l][j]) *max_pc = board[l][j];
 
                     // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
                     test = 1;
                 }
-
-                printf("j,l + 1= %d %d", j, l + 1);
             }
         }
     }
@@ -559,10 +561,8 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
 
     for(i = _board_size; i >= 0; i--)
     {
-        printf("i = %d\n", i);
         for(j = 0; j < _board_size; j++)
         {
-            printf("j = %d\n", j);
             if(board[i][j] != 0)
             {
                 aux = board[i][j];
@@ -592,15 +592,11 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
 
                     *points += pow(2, board[l][j]);
 
-                    printf("points = %d", *points);
-
                     if(*max_pc < board[l][j]) *max_pc = board[l][j];
 
                     // Make sure the piece is generated if the pieces involved in the fusion are right next ot each other
                     test = 1;
                 }
-
-                printf("i,l + 1= %d %d", i, l + 1);
             }
         }
     }
@@ -693,19 +689,25 @@ void NewGame(int board[][MAX_BOARD_POS], int _board_size)
 /* SaveResults: Writes or creates if necessary, a file with all the player's stats
 *  Player's name, points, the highest piece they achieved and the total game time
 */
-void SaveResults(char name[STRING_SIZE], int points, int max_pc, int game_time)
+void SaveResults(char name[STRING_SIZE], int vec_stats[121], int i)
 {
+    int j;
+
     FILE *results;
 
-    results = fopen("stats.txt", "a");
+    results = fopen("stats.txt", "w");
 
     if(results == NULL)
     {
-        printf("The file didn't open correctly");
+        printf("The file failed to open\n");
         exit(EXIT_FAILURE);
     }
 
-    fprintf(results, "%s\nPoints - %d\nHighest piece - %d\nTime - %d\n\n", name, points, max_pc, game_time);
+    fprintf(results, "%s\n", name);
+    for(j = 0; j < i; j += 3)
+    {
+        fprintf(results, "Points - %d\nHighest piece - %d\nTime - %d\n\n", vec_stats[j], pow(2, vec_stats[j + 1]), vec_stats[j + 2]);
+    }
 
     fclose(results);
 }
@@ -713,9 +715,9 @@ void SaveResults(char name[STRING_SIZE], int points, int max_pc, int game_time)
 /*
 *
 */
-int Load(int board[][MAX_BOARD_POS], int _board_size, int *game)
+int Load(int board[][MAX_BOARD_POS], int *board_size, char name[STRING_SIZE], int *points, int *max_pc)
 {
-    int i, j, aux;
+    int i, j, aux, _points, _max_pc, baggage = 0;
 
     FILE *file_save;
 
@@ -725,30 +727,36 @@ int Load(int board[][MAX_BOARD_POS], int _board_size, int *game)
     {
         fscanf(file_save,"%d", &aux);
 
-        if(_board_size != aux) return 0;
+        fscanf(file_save,"%s", name);
 
-        for(j = 0; j < _board_size; j++)
+        for(j = 0; j < aux; j++)
         {
-            for(i = 0; i < _board_size; i++)
+            for(i = 0; i < aux; i++)
             {
                 fscanf(file_save,"%d", &board[i][j]);
             }
         }
 
+        fscanf(file_save,"%d %d %d", &_points, &_max_pc, &baggage);
+
+        *board_size = aux;
+        *points = _points;
+        *max_pc = _max_pc;
+
         fclose(file_save);
 
-        return 1;
+        return baggage;
     }
 
     fclose(file_save);
 
-    return 0;
+    return baggage;
 }
 
 /*
 *
 */
-void Save(int board[][MAX_BOARD_POS], int _board_size)
+void Save(int board[][MAX_BOARD_POS], int _board_size, char name[STRING_SIZE], int points, int max_pc, int game_time)
 {
     int i, j;
 
@@ -758,9 +766,11 @@ void Save(int board[][MAX_BOARD_POS], int _board_size)
 
     if(file_save == NULL)
     {
-        printf("The file didn't open correctly");
+        printf("The file didn't open correctly\n");
         exit(EXIT_FAILURE);
     }
+
+    fprintf(file_save,"%s", name);
 
     fprintf(file_save,"%d\n", _board_size);
 
@@ -772,6 +782,8 @@ void Save(int board[][MAX_BOARD_POS], int _board_size)
         }
         fprintf(file_save,"\n");
     }
+
+    fprintf(file_save, "%d %d %d\n", points, max_pc, game_time);
 
     fclose(file_save);
 }
