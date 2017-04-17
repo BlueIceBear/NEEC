@@ -1,9 +1,5 @@
-JB
-Points - 296
-Highest piece - 64
-Time - 67
-
-Points - 316
-Highest piece - 64
-Time - 71
+Ana
+Points - 1312
+Highest piece - 128
+Time - 49
 

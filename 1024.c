@@ -29,6 +29,7 @@ int RenderLogo(int, int, SDL_Surface *, SDL_Renderer *);
 void RenderTable(int, int *, int *, TTF_Font *, SDL_Surface **, SDL_Renderer *);
 void RenderBoard(int [][MAX_BOARD_POS], SDL_Surface **, int, int, int, SDL_Renderer *);
 void RenderStats( SDL_Renderer *, TTF_Font *, int , int , int );
+void RenderPress(SDL_Renderer *, TTF_Font *);
 void LoadValues(SDL_Surface **);
 void UnLoadValues(SDL_Surface **);
 
@@ -41,13 +42,13 @@ void Parameters(int *, char *, int*);
 void SaveResults(char name[STRING_SIZE] , int vec_stats[121], int);
 void GenStart(int board[][MAX_BOARD_POS], int, int *);
 void GenPiece(int board[][MAX_BOARD_POS], int, int *);
-int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
-int MovPieceDown(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
-int MovPieceLeft(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
-int MovPieceRight(int board[][MAX_BOARD_POS], int, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceUp(int board[][MAX_BOARD_POS], int, int *, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceDown(int board[][MAX_BOARD_POS], int, int *, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceLeft(int board[][MAX_BOARD_POS], int, int *, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
+int MovPieceRight(int board[][MAX_BOARD_POS], int, int *, int *, int *, int *, int last_board[][MAX_BOARD_POS]);
 void CopyPlay(int board[][MAX_BOARD_POS], int, int last_board[][MAX_BOARD_POS]);
-int Undo(int board[][MAX_BOARD_POS], int, int *, int, int last_board[][MAX_BOARD_POS]);
-int CheckWin(int *, int, int, int board[][MAX_BOARD_POS]);
+int Undo(int board[][MAX_BOARD_POS], int, int *, int, int *, int, int last_board[][MAX_BOARD_POS]);
+int CheckWin(int, int, int, int board[][MAX_BOARD_POS]);
 void NewGame(int board[][MAX_BOARD_POS], int);
 void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *,int);
 int Load(int board[][MAX_BOARD_POS], int *, char name[STRING_SIZE], int *, int *, int *);
@@ -79,15 +80,20 @@ int main( int argc, char* args[] )
     int last_board[MAX_BOARD_POS][MAX_BOARD_POS] = {{0}};
 
     int vec_stats[121];
-    int board_size;
+    int board_size = 0;
     char name[STRING_SIZE], answer;
-    int difficulty;
+    int difficulty = 0;
 
+    // i is the position saved in the vec_stats and game is the flag which says if the game is active or not
     int i = 0, game = 0;
 
-    int points = 0, max_pc = 0, game_time = 0, begin = 0, baggage = 0;
+    /* last_points is the points before the latest play, last_pc is the previous highest piece, max_pc is the current highest piece*
+    *begin is the machine's time when the game starts and baggage is the game time of the saved game*/
+    int points = 0, last_points = 0, max_pc = 0, last_pc = 0, game_time = 0, begin = 0, baggage = 0;
 
-    int test = 0, win, has_undo = 0, first = 0, last_points = 0;
+    /* test is a flag to test if a piece is generated or not, win tests the game if the player already won or lost, has_undo tests the undo option*
+    * first is a flag that tests if n has been pressed for the first time*/
+    int test = 0, win = 0, has_undo = 1, first = 0;
 
 
 
@@ -97,12 +103,13 @@ int main( int argc, char* args[] )
     // Initializes the function rand()
     srand(time(NULL));
 
-    printf("Resume game?(y/n)");
+    printf("Resume game?(y/n) ");
     scanf("%c", &answer);
 
     // Loads the game if there is a game to be resumed (same parameters as the previous)
     baggage = Load(board, &board_size, name, &difficulty, &points, &max_pc);
 
+    // This is only to render the game time from the load
     game_time = baggage;
 
     // Asks for parameters (if answer = y and there is no game to resume, asks for parameters anyway)
@@ -150,13 +157,9 @@ int main( int argc, char* args[] )
                             {
                                 if(first != 0)
                                 {
-                                    printf("%d\n", i);
                                     vec_stats[i] = points;
-                                    printf("%d\n", points);
                                     vec_stats[i + 1] = max_pc;
-                                    printf("%d\n", max_pc);
                                     vec_stats[i + 2] = game_time;
-                                    printf("%d\n", game_time);
                                     i += 3;
                                 }
 
@@ -180,7 +183,7 @@ int main( int argc, char* args[] )
                         // Verifies if the game has already undo once, and if not, undos
                         if(game == 1)
                         {
-                            if(has_undo == 0) has_undo = Undo(board, board_size, &points, last_points, last_board);
+                            if(has_undo == 0) has_undo = Undo(board, board_size, &points, last_points, &max_pc, last_pc, last_board);
                         }
                         break;
 
@@ -188,14 +191,14 @@ int main( int argc, char* args[] )
                         if(game == 1)
                         {
                             // Moves piece if possible
-                            test = MovPieceUp(board, board_size, &points, &last_points, &max_pc, last_board);
+                            test = MovPieceUp(board, board_size, &points, &last_points, &max_pc, &last_pc, last_board);
 
                             // Generates another piece, puts undo ready and checks if the player won
                             if(test != 0) 
                             {
                                 GenPiece(board, board_size, &max_pc);
                                 has_undo = 0;
-                                win = CheckWin(&max_pc, difficulty, board_size, board);
+                                win = CheckWin(max_pc, difficulty, board_size, board);
                             }
                         }
 
@@ -204,13 +207,13 @@ int main( int argc, char* args[] )
                     case SDLK_DOWN:
                         if(game == 1)
                         {
-                            test = MovPieceDown(board, board_size, &points, &last_points, &max_pc, last_board);
+                            test = MovPieceDown(board, board_size, &points, &last_points, &max_pc, &last_pc, last_board);
 
                             if(test != 0) 
                             {
                                 GenPiece(board, board_size, &max_pc);
                                 has_undo = 0;
-                                win = CheckWin(&max_pc, difficulty, board_size, board);
+                                win = CheckWin(max_pc, difficulty, board_size, board);
                             }
                         }
 
@@ -219,13 +222,13 @@ int main( int argc, char* args[] )
                     case SDLK_LEFT:
                         if(game == 1)
                         {
-                            test = MovPieceLeft(board, board_size, &points, &last_points, &max_pc, last_board);
+                            test = MovPieceLeft(board, board_size, &points, &last_points, &max_pc, &last_pc, last_board);
 
                             if(test != 0) 
                             {
                                 GenPiece(board, board_size, &max_pc);
                                 has_undo = 0;
-                                win =CheckWin(&max_pc, difficulty, board_size, board);
+                                win =CheckWin(max_pc, difficulty, board_size, board);
                             }
                         }
 
@@ -234,13 +237,13 @@ int main( int argc, char* args[] )
                     case SDLK_RIGHT:
                         if(game == 1)
                         {
-                            test = MovPieceRight(board, board_size, &points, &last_points, &max_pc, last_board);
+                            test = MovPieceRight(board, board_size, &points, &last_points, &max_pc, &last_pc, last_board);
 
                             if(test != 0)
                             {   
                                 GenPiece(board, board_size, &max_pc);
                                 has_undo = 0;
-                                win = CheckWin(&max_pc, difficulty, board_size, board);
+                                win = CheckWin(max_pc, difficulty, board_size, board);
                             }
                         }
 
@@ -260,7 +263,9 @@ int main( int argc, char* args[] )
         // renders stats
         RenderStats(renderer, sans, difficulty, points, game_time);
         // renders win/lose rectangle
-        if(win != 0) RenderInfoRect(renderer, serif,win);
+        if(win != 0) RenderInfoRect(renderer, serif, win);
+        // Renders Press n to start
+        if(game == 0) RenderPress(renderer, serif);
         // render in the screen all changes above
         SDL_RenderPresent(renderer);
         // add a delay
@@ -286,13 +291,6 @@ int main( int argc, char* args[] )
     vec_stats[i + 1] = max_pc;
     vec_stats[i + 2] = game_time;
     i += 3;
-
-    for(int j = 0; j < i; j += 3)
-    {
-        printf("%d\n", vec_stats[j]);
-        printf("%d\n", vec_stats[j+1]);
-        printf("%d\n", vec_stats[j+2]);
-    }
 
     // Saves the game's stats
     SaveResults(name, vec_stats, i);
@@ -419,9 +417,13 @@ void GenPiece(int board[][MAX_BOARD_POS], int _board_size, int *max_pc)
 /* MovPieceUp: Caculates the movements of the pieces on the board, including adding pieces
 *  The board's matrix and it's size
 */
-int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int *last_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
+
+    CopyPlay(board, _board_size, last_board);
+
+    *last_pc = *max_pc;
 
     for(i = 0; i < _board_size; i++)
     {
@@ -438,8 +440,6 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *la
                 if(j != l + 1)
                 {
                     test = 1;
-
-                    CopyPlay(board, _board_size, last_board);
                 }
 
                 // substitution of the values so the piece appears to move
@@ -473,9 +473,13 @@ int MovPieceUp(int board[][MAX_BOARD_POS], int _board_size, int *points, int *la
 /* MovPieceDown: Caculates the movements of the pieces on the board
 *  The board's matrix and it's size
 */
-int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int *last_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
+
+    CopyPlay(board, _board_size, last_board);
+
+    *last_pc = *max_pc;
 
     for(i = 0; i < _board_size; i++)
     {
@@ -492,8 +496,6 @@ int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
                 if(j != l - 1)
                 {
                     test = 1;
-
-                    CopyPlay(board, _board_size, last_board);
                 }
 
                 // substitution of the values so the piece appears to move
@@ -525,9 +527,13 @@ int MovPieceDown(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 /* MovPieceLeft: Caculates the movements of the pieces on the board
 *  The board's matrix and it's size
 */
-int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int *last_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
+                    
+    CopyPlay(board, _board_size, last_board);
+
+    *last_pc = *max_pc;
 
     for(i = 0; i < _board_size; i++)
     {
@@ -544,8 +550,6 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
                 if(i != l + 1)
                 {
                     test = 1;
-
-                    CopyPlay(board, _board_size, last_board);
                 }
 
                 // substitution of the values so the piece appears to move
@@ -577,9 +581,13 @@ int MovPieceLeft(int board[][MAX_BOARD_POS], int _board_size, int *points, int *
 /* MovPieceRight: Caculates the movements of the pieces on the board
 *  The board's matrix and it's size
 */
-int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int last_board[][MAX_BOARD_POS])
+int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int *last_points, int *max_pc, int *last_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j, l, aux, test = 0;
+
+    CopyPlay(board, _board_size, last_board);
+
+    *last_pc = *max_pc;
 
     for(i = _board_size; i >= 0; i--)
     {
@@ -596,8 +604,6 @@ int MovPieceRight(int board[][MAX_BOARD_POS], int _board_size, int *points, int 
                 if(i != l - 1)
                 {
                     test = 1;
-
-                    CopyPlay(board, _board_size, last_board);
                 }
 
                 // substitution of the values so the piece appears to move
@@ -652,7 +658,7 @@ void CopyPlay(int board[][MAX_BOARD_POS], int _board_size, int last_board[][MAX_
 /* Undo: Puts the board's pieces as the previous board's pieces
 *  The board's matrix, the board's size, game's points, previous points and the last board before the current one
 */
-int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_points, int last_board[][MAX_BOARD_POS])
+int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_points, int *max_pc, int last_pc, int last_board[][MAX_BOARD_POS])
 {
     int i, j;
 
@@ -665,6 +671,7 @@ int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_poin
     }
 
     *points = last_points;
+    *max_pc = last_pc;
 
     return 1;
 }
@@ -672,11 +679,11 @@ int Undo(int board[][MAX_BOARD_POS], int _board_size, int *points, int last_poin
 /* CheckWin: Verifies if player has won or lost
 *  Highest piece achieved, difficulty, the board's size and matrix
 */
-int CheckWin(int *max_pc, int _difficulty, int _board_size, int board[][MAX_BOARD_POS])
+int CheckWin(int _max_pc, int _difficulty, int _board_size, int board[][MAX_BOARD_POS])
 {
     int i, j;
 
-    if(*max_pc == _difficulty) return 1;
+    if(_max_pc == _difficulty) return 1;
 
     for(i = 0; i < _board_size; i++)
     {
@@ -759,27 +766,30 @@ int Load(int board[][MAX_BOARD_POS], int *board_size, char name[STRING_SIZE], in
 
     file_save = fopen("save.txt", "r");
 
-    if(file_save != NULL)
+    if(file_save == NULL)
     {
-        fscanf(file_save,"%s", name);
-
-        fscanf(file_save,"%d %d", &_board_size, &_difficulty);
-
-        for(j = 0; j < _board_size; j++)
-        {
-            for(i = 0; i < _board_size; i++)
-            {
-                fscanf(file_save,"%d", &board[i][j]);
-            }
-        }
-
-        fscanf(file_save,"%d %d %d", &_points, &_max_pc, &baggage);
-
-        *board_size = _board_size;
-        *difficulty = _difficulty;
-        *points = _points;
-        *max_pc = _max_pc;
+        printf("There is no game to resume.\n");
+        return baggage;
     }
+
+    fscanf(file_save,"%s", name);
+
+    fscanf(file_save,"%d %d", &_board_size, &_difficulty);
+
+    for(j = 0; j < _board_size; j++)
+    {
+        for(i = 0; i < _board_size; i++)
+        {
+            fscanf(file_save,"%d", &board[i][j]);
+        }
+    }
+
+    fscanf(file_save,"%d %d %d", &_points, &_max_pc, &baggage);
+
+    *board_size = _board_size;
+    *difficulty = _difficulty;
+    *points = _points;
+    *max_pc = _max_pc;
 
     fclose(file_save);
 
@@ -918,7 +928,17 @@ void RenderInfoRect(SDL_Renderer *_renderer, TTF_Font *_font, int _win)
     }
 }
 
+/* RenderPress: Renders the instructions to press n to start
+*  Renderer and font
+*/
+void RenderPress(SDL_Renderer *_renderer, TTF_Font *_font)
+{
+    SDL_Color black = {0, 0, 0};
 
+    char instructions[STRING_SIZE] = "Press n to start";
+
+    RenderText(670, 300, instructions, _font, &black, _renderer);
+}
 
 
 
