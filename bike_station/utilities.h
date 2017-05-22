@@ -34,25 +34,27 @@ struct user{
 typedef struct trip{
 	int tripID;
 	int duration;
+	date_val start_date;
 	time_val start_time;
-	time_val final_time;
-	int start_station;
-	int final_station;
-	char bikeID[6];
+	int start_stationID;
+	date_val end_date;
+	time_val end_time;
+	int end_stationID;
+	char bikeID[7];
 	struct user user;
 }trip;
 
 typedef struct station{
 	int stationID;
-	char short_name[6];
+	char terminal[7];
 	char long_name[MAX_STRING];
-	char area[MAX_STRING];
+	char municipal[MAX_STRING];
 	coordenates place;
 	int status;			//if it exists, status = 0, if not, status = 1
 }station;
 
 typedef struct trip_node{
-	trip s_payload;
+	trip payload;
 	struct trip_node *next;
 	//struct trip_node *prev;
 }trip_node;

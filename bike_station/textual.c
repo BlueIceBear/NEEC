@@ -1,7 +1,7 @@
 #include "textual.h"
 
 
-void Textual()
+void Textual(trip_node *headtrip)
 {
 	int option = 0;
 
@@ -21,7 +21,7 @@ void Textual()
 				break;
 
 			case 2:
-				TripListing();
+				TripListing(headtrip);
 				option = 0;
 				break;
 
@@ -112,8 +112,49 @@ void DataSelection()
 	}
 }
 
-void TripListing()
+void TripListing(trip_node *headtrip)
 {
+	char str_aux[MAX_STRING];
+
+	int trip_num, mult = 0, i;
+
+	trip_node *trips;
+
+	trips = headtrip;
+
+	printf("Quantas viagens a apresentar de cada vez?\n(é possível navegar pelas páginas inserindo \"n\" para ver a próxima, \"p\" para ver a anterior e \"exit\" para sair da listagem para o menu principal)\n");
+
+	while(scanf("%d", &trip_num) != 1 && trip_num < 0)
+	{
+		printf("Número de viagens inválido.\n");
+	}
+
+	getchar();
+
+	while(strcmp(str_aux, "exit\n") != 0)
+	{
+
+		for(i = 0; i < mult*trip_num; i++)
+		{
+			trips = trips->next;
+		}
+
+		for(i = 0; i < trip_num; i++)
+		{
+			if(trips != NULL) printf("%d\n", trips->payload.tripID);
+			else printf("Está a NULL.\n");
+
+			trips = trips->next;
+		}
+
+		fgets(str_aux, MAX_STRING, stdin);
+
+		if(strcmp(str_aux,"n\n") == 0) mult++;
+		if(strcmp(str_aux,"p\n") == 0 && mult > 0) mult--;
+
+		trips = headtrip;
+	}
+
 
 }
 

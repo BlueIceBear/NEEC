@@ -9,7 +9,7 @@ void Textual();
 void MainMenu(int *);
 
 void DataSelection();
-void TripListing();
+void TripListing(trip_node *);
 void StationListing();
 void RouteListing();
 void StatsListing();
