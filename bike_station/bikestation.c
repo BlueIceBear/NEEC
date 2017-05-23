@@ -10,20 +10,22 @@
 int main(int argc, char *argv[])
 {
 	int option;
-	trip_node *headtrip;
-	station_node *head_station;
+	trip_node *headtrip = NULL;
+	station_node *headstation = NULL;
 
 	if(strcmp(argv[1], "-t") == 0) 
 	{
 		headtrip = TripFiles(argv[2]);
-		head_station = StationFiles(argv[3]);
-		Textual(headtrip);
+		headstation = StationFiles(argv[3]);
+
+		printf("%d\n", headstation->payload.stationID);
+		Textual(headtrip, headstation);
 	}
 
 	else if(strcmp(argv[1], "-g") == 0) 
 	{
 		headtrip = TripFiles(argv[2]);
-		head_station = StationFiles(argv[3]);
+		headstation = StationFiles(argv[3]);
 		Graphical();
 	}
 

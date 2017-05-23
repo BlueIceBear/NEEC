@@ -4,7 +4,7 @@
 #include "utilities.h"
 
 
-void Textual();
+void Textual(trip_node *, station_node *);
 
 void MainMenu(int *);
 

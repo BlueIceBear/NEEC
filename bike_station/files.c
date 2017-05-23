@@ -9,7 +9,7 @@ trip_node* TripFiles(char *trip_file)
 	int count;
 
 
-	trip_node *trips = NULL, *trip_current, *trip_aux;
+	trip_node *trips = NULL, *trip_current = NULL, *trip_aux = NULL;
 
 	/*trips = (trip_node*) malloc(sizeof(trip_node));	// alocation of dummy head node
 
@@ -40,9 +40,15 @@ trip_node* TripFiles(char *trip_file)
 		
 		trip_current = (trip_node*) malloc(sizeof(trip_node));
 
+		if(trip_current == NULL)
+		{
+			printf("Erro na alocação de memória.\n");
+			exit(EXIT_FAILURE);
+		}
+
 		trip_current->next = NULL;
 
-		printf("inicio de bodegueira\n");
+
 
 		if(trips == NULL) 
 		{
@@ -57,13 +63,6 @@ trip_node* TripFiles(char *trip_file)
 			trip_aux = trip_current;
 		}
 
-		printf("fim da bodegueira\n");
-
-		if(trip_current == NULL)
-		{
-			printf("Erro na alocação de memória.\n");
-			exit(EXIT_FAILURE);
-		}
 
 		str_aux = strtok(line, ",");
 		sscanf(str_aux,"%d", &trip_current->payload.tripID);
@@ -127,13 +126,7 @@ station_node* StationFiles(char *station_file)
 
 	int count = 0;
 
-
-	station_node *stations, *station_current;
-
-	stations = (station_node*) malloc(sizeof(station_node));
-
-	stations->next = NULL;
-
+	station_node *stations = NULL, *station_current = NULL, *station_aux = NULL;
 
 
 	FILE *fstation;
@@ -146,12 +139,36 @@ station_node* StationFiles(char *station_file)
 		exit(EXIT_FAILURE);
 	}
 
+
 	fgets(line, MAX_LONG_STRING, fstation);
+
 
 	while(fgets(line, MAX_LONG_STRING, fstation) != NULL)
 	{
 		
 		station_current = (station_node*) malloc(sizeof(station_node));
+
+		if(station_current == NULL)
+		{
+			printf("Erro na alocação de memória.\n");
+			exit(EXIT_FAILURE);
+		}
+
+
+		station_current->next = NULL;
+
+		if(stations == NULL) 
+		{
+			stations = station_current;
+
+			station_aux = station_current;
+		}
+		else
+		{
+			station_aux->next = station_current;
+
+			station_aux = station_current;
+		}
 
 
 		str_aux = strtok(line, ",");
@@ -172,14 +189,13 @@ station_node* StationFiles(char *station_file)
 		str_aux = strtok(NULL, ",");
 		sscanf(str_aux,"%f", &station_current->payload.place.longitude);
 
-		str_aux = strtok(NULL, ",");
+		str_aux = strtok(NULL, "\n");
 		
 		if(strcmp(str_aux,"Existing") == 0) station_current->payload.status = 0;
 		else station_current->payload.status = 1;
 
 
 		station_current = station_current->next;
-
 
 		count++;
 	}
