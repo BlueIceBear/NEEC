@@ -67,4 +67,6 @@ typedef struct station_node{
 
 int CalculateWday(int, int, int);
 
+void FreeLists(trip_node *, station_node *);
+
 #endif

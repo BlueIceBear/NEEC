@@ -13,19 +13,16 @@ int main(int argc, char *argv[])
 	trip_node *headtrip = NULL;
 	station_node *headstation = NULL;
 
+	headtrip = TripFiles(argv[2]);
+	headstation = StationFiles(argv[3]);
+
 	if(strcmp(argv[1], "-t") == 0) 
 	{
-		headtrip = TripFiles(argv[2]);
-		headstation = StationFiles(argv[3]);
-
-		printf("%d\n", headstation->payload.stationID);
 		Textual(headtrip, headstation);
 	}
 
 	else if(strcmp(argv[1], "-g") == 0) 
 	{
-		headtrip = TripFiles(argv[2]);
-		headstation = StationFiles(argv[3]);
 		Graphical();
 	}
 
@@ -35,7 +32,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-
+	FreeLists(headtrip, headstation);
 	//Ask(&option);
 
 	return 0;

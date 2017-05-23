@@ -90,6 +90,10 @@ trip_node* TripFiles(char *trip_file)
 
 			str_aux = strtok(NULL, ",");
 		}
+		else
+		{
+			trip_current->payload.bikeID[0] = '\0';
+		}
 
 		
 		if(strcmp(str_aux,"Casual") == 0)

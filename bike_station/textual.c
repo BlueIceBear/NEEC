@@ -28,6 +28,7 @@ void Textual(trip_node *headtrip, station_node *headstation)
 				break;
 
 			case 2:
+				printf("%d\n", copytrip->payload.tripID);
 				TripListing(copytrip);
 				option = 0;
 				break;
@@ -80,6 +81,8 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 	int pri_option = 0, sec_option = 0, aux = 0, start_hours = 0, start_minutes = 0, end_hours = 0, end_minutes = 0, flag = 0;
 
 	char selection[MAX_STRING];
+
+	selection[0] = '\0';
 
 	getchar();
 
@@ -147,6 +150,15 @@ void TimePeriod(trip_node **copytrip, station_node **copystation, int start_hour
 				if(((*copytrip)->payload.start_time.minutes >= start_minutes) && ((*copytrip)->payload.end_time.minutes <= end_minutes))
 				{
 
+
+					T_current = (trip_node *) malloc(sizeof(trip_node));
+
+					if(T_current == NULL)
+					{
+						printf("Erro na alocação de memória.\n");
+						exit(EXIT_FAILURE);
+					}
+
 					if(T_aux == NULL)
 					{
 						T_head = T_current;
@@ -159,9 +171,6 @@ void TimePeriod(trip_node **copytrip, station_node **copystation, int start_hour
 
 						T_aux = T_current;
 					}
-
-					T_current = (trip_node *) malloc(sizeof(trip_node));
-
 					//copiar valores
 
 					T_current->payload.tripID = (*copytrip)->payload.tripID;
@@ -302,10 +311,16 @@ void WeekDay(trip_node **copytrip, int parameter, int flag)
 		while((*copytrip) != NULL)
 		{
 
-			if(CalculateWday((*copytrip)->payload.start_date.month, (*copytrip)->payload.start_date.day, (*copytrip)->payload.start_date.year) == parameter || CalculateWday((*copytrip)->payload.end_date.month, (*copytrip)->payload.end_date.day, (*copytrip)->payload.end_date.year) == parameter)
+			if(CalculateWday((*copytrip)->payload.start_date.month, (*copytrip)->payload.start_date.day, (*copytrip)->payload.start_date.year) == parameter /*|| CalculateWday((*copytrip)->payload.end_date.month, (*copytrip)->payload.end_date.day, (*copytrip)->payload.end_date.year) == parameter*/)
 			{
 
-				printf("está a criar a lista\n");
+				T_current = (trip_node *) malloc(sizeof(trip_node));
+
+				if(T_current == NULL)
+				{
+					printf("Erro na alocação de memória.\n");
+					exit(EXIT_FAILURE);
+				}
 
 				if(T_aux == NULL)
 				{
@@ -319,8 +334,6 @@ void WeekDay(trip_node **copytrip, int parameter, int flag)
 
 					T_aux = T_current;
 				}
-
-				T_current = (trip_node *) malloc(sizeof(trip_node));
 
 				//copiar valores
 
@@ -381,7 +394,14 @@ void WeekDay(trip_node **copytrip, int parameter, int flag)
 	}
 	else
 	{
+		if(CalculateWday((*copytrip)->payload.start_date.month, (*copytrip)->payload.start_date.day, (*copytrip)->payload.start_date.year) != parameter && CalculateWday((*copytrip)->payload.end_date.month, (*copytrip)->payload.end_date.day, (*copytrip)->payload.end_date.year) != parameter)
+		{
+			T_aux = (*copytrip);
 
+			(*copytrip) = (*copytrip)->next;
+
+			free(T_aux);
+		}
 	}
 
 	(*copytrip) = T_head;
@@ -397,8 +417,17 @@ void TripDuration(trip_node **copytrip, int parameter, int flag)
 		while((*copytrip) != NULL)
 		{
 
-			if((*copytrip)->payload.duration == parameter)
+			if((*copytrip)->payload.duration <= parameter)
 			{
+
+
+				T_current = (trip_node *) malloc(sizeof(trip_node));
+
+				if(T_current == NULL)
+				{
+					printf("Erro na alocação de memória.\n");
+					exit(EXIT_FAILURE);
+				}
 
 				if(T_aux == NULL)
 				{
@@ -412,8 +441,6 @@ void TripDuration(trip_node **copytrip, int parameter, int flag)
 
 					T_aux = T_current;
 				}
-
-				T_current = (trip_node *) malloc(sizeof(trip_node));
 
 				//copiar valores
 
@@ -474,7 +501,14 @@ void TripDuration(trip_node **copytrip, int parameter, int flag)
 	}
 	else
 	{
+		if((*copytrip)->payload.duration > parameter)
+		{
+			T_aux = (*copytrip);
 
+			(*copytrip) = (*copytrip)->next;
+
+			free(T_aux);
+		}
 	}
 
 	(*copytrip) = T_head;
@@ -519,25 +553,25 @@ void TripListing(trip_node *headtrip)
 	while(strcmp(str_aux, "exit\n") != 0)
 	{
 
-		for(i = 0; i < mult*trip_num; i++)
+		for(i = 0; i < mult*trip_num && headtrip != NULL && headtrip->next != NULL; i++)
 		{
-			trips = trips->next;
+			headtrip = headtrip->next;
 		}
 
-		for(i = 0; i < trip_num; i++)
+		for(i = 0; i < trip_num && headtrip != NULL; i++)
 		{
-			if(trips != NULL) printf("%d\n", trips->payload.tripID);
+			if(headtrip != NULL) printf("%d\n", headtrip->payload.tripID);
 			else printf("Está a NULL.\n");
 
-			trips = trips->next;
+			headtrip = headtrip->next;
 		}
 
 		fgets(str_aux, MAX_STRING, stdin);
 
-		if(strcmp(str_aux,"n\n") == 0) mult++;
+		if(strcmp(str_aux,"n\n") == 0 && headtrip != NULL && headtrip->next != NULL) mult++;
 		if(strcmp(str_aux,"p\n") == 0 && mult > 0) mult--;
 
-		trips = headtrip;
+		headtrip = trips;
 	}
 
 
