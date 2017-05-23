@@ -65,6 +65,6 @@ typedef struct station_node{
 	//struct station_node *prev;
 }station_node;
 
-trip_node* InsertTail();
+int CalculateWday(int, int, int);
 
 #endif

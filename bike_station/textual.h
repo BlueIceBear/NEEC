@@ -14,8 +14,9 @@ void StationListing();
 void RouteListing();
 void StatsListing();
 
-void TimePeriod();
-void WeekDay();
-void TripDuration();
+void TimePeriod(trip_node **, station_node **, int, int, int, int, int);
+void WeekDay(trip_node **, int, int);
+void TripDuration(trip_node **, int, int);
+void RemoveSelections(trip_node **, trip_node *);
 
 #endif
