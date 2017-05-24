@@ -1,9 +1,9 @@
 #include "textual.h"
 
 
-void Textual(trip_node *headtrip, station_node *headstation)
+void Textual(trip_node *headtrip, station_node *headstation, int trip_count, int station_count, int max_id)
 {
-	int option = 0;
+	int option = 0, flag = 0;
 
 	trip_node *copytrip = headtrip;
 	station_node *copystation = headstation;
@@ -23,7 +23,7 @@ void Textual(trip_node *headtrip, station_node *headstation)
 				break;
 
 			case 1:
-				DataSelection(&copytrip, &copystation, headtrip, headstation);
+				DataSelection(&copytrip, &copystation, headtrip, headstation, &flag);
 				option = 0;
 				break;
 
@@ -34,7 +34,7 @@ void Textual(trip_node *headtrip, station_node *headstation)
 				break;
 
 			case 3:
-				StationListing();
+				StationListing(copytrip, copystation, station_count, max_id);
 				option = 0;
 				break;
 
@@ -76,15 +76,14 @@ void MainMenu(int *option)
 	}
 }
 
-void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *headtrip, station_node *headstation)
+void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *headtrip, station_node *headstation, int *flag)
 {
-	int pri_option = 0, sec_option = 0, aux = 0, start_hours = 0, start_minutes = 0, end_hours = 0, end_minutes = 0, flag = 0;
+	int pri_option = 0, sec_option = 0, aux = 0, start_hours = 0, start_minutes = 0, end_hours = 0, end_minutes = 0;
 
 	char selection[MAX_STRING];
 
 	selection[0] = '\0';
 
-	getchar();
 
 	while(((sscanf(selection,"%d", &pri_option) != 1) || (pri_option < 1) || (pri_option > 5)) && (pri_option != 4) && (pri_option != 5)) 
 	{
@@ -93,6 +92,8 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 		{
 			printf("\nEscolha inválida\n\n");
 		}
+
+		getchar();
 
 		printf("Escolha o(s) parâmetros que deseja (insira 5 para sair):\n");
 		printf("\t(escreva 'del <número do parâmetro>' para retirar esse parâmetro)\n\n");
@@ -104,14 +105,10 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 		aux = 1;
 	}
 
-
-	printf("%d %d %d %d %d\n", pri_option, start_hours, start_minutes, end_hours, end_minutes);
-
 	switch(pri_option)
 	{
 		case 1:
 			// code for period of time selection
-			getchar();
 
 			while((sscanf(selection,"%d:%d %d:%d", &start_hours, &start_minutes, &end_hours, &end_minutes) != 4) || (start_hours < 0) || (start_minutes < 0) || (end_hours < 0) || (end_minutes < 0))
 			{
@@ -120,6 +117,8 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 					printf("\nEscolha inválida\n\n");
 				}
 
+				getchar();
+
 				printf("\t-> to add: <start hour>:<start minute> <end hour>:<end minute>\n");
 
 				fgets(selection, MAX_STRING, stdin);
@@ -127,13 +126,14 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 				aux = 1;
 			}
 
-			TimePeriod(&(*copytrip), &(*copystation), start_hours, start_minutes, end_hours, end_minutes, flag);
-			flag = 1;
+			printf("%d %d %d %d %d\n", pri_option, start_hours, start_minutes, end_hours, end_minutes);
+
+			TimePeriod(&(*copytrip), &(*copystation), start_hours, start_minutes, end_hours, end_minutes, *flag);
+			*flag = 1;
 			break;
 
 		case 2:
 			// code for day of the week selection
-			getchar();
 
 			while((sscanf(selection,"%d", &sec_option) != 1) || (sec_option < 0) || (sec_option > 7))
 			{
@@ -142,6 +142,8 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 					printf("\nEscolha inválida\n\n");
 				}
 
+				getchar();
+
 				printf("\t-> to add: <dia da semana>\n");
 
 				fgets(selection, MAX_STRING, stdin);
@@ -149,13 +151,12 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 				aux = 1;
 			}
 
-			WeekDay(&(*copytrip), sec_option, flag);
-			flag = 2;
+			WeekDay(&(*copytrip), sec_option, *flag);
+			*flag = 2;
 			break;
 
 		case 3:
 			// code for duration selection
-			getchar();
 
 			while((sscanf(selection,"%d", &sec_option) != 1) || (sec_option < 0))
 			{
@@ -164,6 +165,8 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 					printf("\nEscolha inválida\n\n");
 				}
 
+				getchar();
+
 				printf("\t-> to add: 3 <duração>\n");
 
 				fgets(selection, MAX_STRING, stdin);
@@ -171,13 +174,13 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 				aux = 1;
 			}
 
-			TripDuration(&(*copytrip), sec_option, flag);
-			flag = 3;
+			TripDuration(&(*copytrip), sec_option, *flag);
+			*flag = 3;
 			break;
 
 		case 4:
 			// code to remove restrictions
-			if(flag != 0) RemoveSelections(&(*copytrip), headtrip);
+			if(*flag != 0) RemoveSelections(&(*copytrip), headtrip);
 
 		default:
 			break;
@@ -198,104 +201,106 @@ void TimePeriod(trip_node **copytrip, station_node **copystation, int start_hour
 		while((*copytrip) != NULL)
 		{
 
-			k = (*copytrip)->payload.end_date.day - (*copytrip)->payload.start_date.day;
-
-			if(k < 2)
+			if((*copytrip)->payload.end_time.hours < (*copytrip)->payload.start_time.hours)
 			{
-				if(k == 1)
+				if((*copytrip)->payload.end_time.minutes < (*copytrip)->payload.start_time.minutes)
 				{
 					last = (*copytrip)->payload.end_time.hours + 24;
 
 					end = end_hours + 24;
 				}
-				else
-				{
-					last = (*copytrip)->payload.end_time.hours;
+			}
+			else
+			{
+				last = (*copytrip)->payload.end_time.hours;
 
-					end = end_hours;
-				}
-
-				if(((*copytrip)->payload.start_time.hours >= start_hours) && (last <= end))
-				{
-					if(((*copytrip)->payload.start_time.minutes >= start_minutes) && ((*copytrip)->payload.end_time.minutes <= end_minutes))
-					{
-
-						printf("%d %d %d %d\n", (*copytrip)->payload.start_time.hours, start_hours, last, end);
-						
-						T_current = (trip_node *) malloc(sizeof(trip_node));
-
-						if(T_current == NULL)
-						{
-							printf("Erro na alocação de memória.\n");
-							exit(EXIT_FAILURE);
-						}
-
-						if(T_aux == NULL)
-						{
-							T_head = T_current;
-
-							T_aux = T_current;
-						}
-						else
-						{
-							T_aux->next = T_current;
-
-							T_aux = T_current;
-						}
-						//copiar valores
-
-						T_current->payload.tripID = (*copytrip)->payload.tripID;
-
-
-						T_current->payload.duration = (*copytrip)->payload.duration;
-
-
-						T_current->payload.start_date.month = (*copytrip)->payload.start_date.month;
-
-						T_current->payload.start_date.day = (*copytrip)->payload.start_date.day;
-
-						T_current->payload.start_date.year = (*copytrip)->payload.start_date.year;
-
-
-						T_current->payload.start_time.hours = (*copytrip)->payload.start_time.hours;
-
-						T_current->payload.start_time.minutes = (*copytrip)->payload.start_time.minutes;
-
-						
-						T_current->payload.end_date.month = (*copytrip)->payload.end_date.month;
-
-						T_current->payload.end_date.day = (*copytrip)->payload.end_date.day;
-
-						T_current->payload.end_date.year = (*copytrip)->payload.end_date.year;
-
-
-						T_current->payload.end_time.hours = (*copytrip)->payload.end_time.hours;
-
-						T_current->payload.end_time.minutes = (*copytrip)->payload.end_time.minutes;
-
-
-						T_current->payload.start_stationID = (*copytrip)->payload.start_stationID;
-
-						T_current->payload.end_stationID = (*copytrip)->payload.end_stationID;
-
-
-						strcpy(T_current->payload.bikeID, (*copytrip)->payload.bikeID);
-
-
-						T_current->payload.user.membership = (*copytrip)->payload.user.membership;
-
-						T_current->payload.user.birth = (*copytrip)->payload.user.birth;
-
-						T_current->payload.user.gender = (*copytrip)->payload.user.gender;
-
-
-						T_current->next = NULL;
-
-						T_current = T_current->next;
-					}
-				}
+				end = end_hours;
 			}
 
+
+
+			if(((*copytrip)->payload.start_time.hours >= start_hours) && (last <= end))
+			{
+				if(((*copytrip)->payload.start_time.minutes >= start_minutes) && ((*copytrip)->payload.end_time.minutes <= end_minutes))
+				{
+
+					printf("%d %d %d %d\n", (*copytrip)->payload.start_time.hours, start_hours, last, end);
+					
+					T_current = (trip_node *) malloc(sizeof(trip_node));
+
+					if(T_current == NULL)
+					{
+						printf("Erro na alocação de memória.\n");
+						exit(EXIT_FAILURE);
+					}
+
+					if(T_aux == NULL)
+					{
+						T_head = T_current;
+
+						T_aux = T_current;
+					}
+					else
+					{
+						T_aux->next = T_current;
+
+						T_aux = T_current;
+					}
+					//copiar valores
+
+					T_current->payload.tripID = (*copytrip)->payload.tripID;
+
+
+					T_current->payload.duration = (*copytrip)->payload.duration;
+
+
+					T_current->payload.start_date.month = (*copytrip)->payload.start_date.month;
+
+					T_current->payload.start_date.day = (*copytrip)->payload.start_date.day;
+
+					T_current->payload.start_date.year = (*copytrip)->payload.start_date.year;
+
+
+					T_current->payload.start_time.hours = (*copytrip)->payload.start_time.hours;
+
+					T_current->payload.start_time.minutes = (*copytrip)->payload.start_time.minutes;
+
+					
+					T_current->payload.end_date.month = (*copytrip)->payload.end_date.month;
+
+					T_current->payload.end_date.day = (*copytrip)->payload.end_date.day;
+
+					T_current->payload.end_date.year = (*copytrip)->payload.end_date.year;
+
+
+					T_current->payload.end_time.hours = (*copytrip)->payload.end_time.hours;
+
+					T_current->payload.end_time.minutes = (*copytrip)->payload.end_time.minutes;
+
+
+					T_current->payload.start_stationID = (*copytrip)->payload.start_stationID;
+
+					T_current->payload.end_stationID = (*copytrip)->payload.end_stationID;
+
+
+					strcpy(T_current->payload.bikeID, (*copytrip)->payload.bikeID);
+
+
+					T_current->payload.user.membership = (*copytrip)->payload.user.membership;
+
+					T_current->payload.user.birth = (*copytrip)->payload.user.birth;
+
+					T_current->payload.user.gender = (*copytrip)->payload.user.gender;
+
+
+					T_current->next = NULL;
+
+					T_current = T_current->next;
+				}
+			}
+			
+
+			
 			(*copytrip) = (*copytrip)->next;
 		}
 	}
@@ -303,35 +308,35 @@ void TimePeriod(trip_node **copytrip, station_node **copystation, int start_hour
 	{
 		while((*copytrip) != NULL)
 		{
-			k = (*copytrip)->payload.end_date.day - (*copytrip)->payload.start_date.day;
 
-			if(k < 2)
+			if(end_hours < start_hours)
 			{
-				if(k == 1)
+				if(end_minutes < start_minutes)
 				{
 					last = (*copytrip)->payload.end_time.hours + 24;
 
 					end = end_hours + 24;
 				}
-				else
+			}
+			else
+			{
+				last = (*copytrip)->payload.end_time.hours;
+
+				end = end_hours;
+			}
+
+			if(((*copytrip)->payload.start_time.hours < start_hours) || (last > end))
+			{
+				if(((*copytrip)->payload.start_time.minutes < start_minutes) || ((*copytrip)->payload.end_time.minutes > end_minutes))
 				{
-					last = (*copytrip)->payload.end_time.hours;
+					T_aux = (*copytrip);
 
-					end = end_hours;
-				}
+					(*copytrip) = (*copytrip)->next;
 
-				if(((*copytrip)->payload.start_time.hours < start_hours) || (last > end))
-				{
-					if(((*copytrip)->payload.start_time.minutes < start_minutes) || ((*copytrip)->payload.end_time.minutes > end_minutes))
-					{
-						T_aux = (*copytrip);
-
-						(*copytrip) = (*copytrip)->next;
-
-						free(T_aux);
-					}
+					free(T_aux);
 				}
 			}
+			
 		}
 	}
 
@@ -615,15 +620,15 @@ void TripDuration(trip_node **copytrip, int parameter, int flag)
 
 void RemoveSelections(trip_node **copytrip, trip_node *headtrip)
 {
-	trip_node *aux;
+	trip_node *aux = (*copytrip);
 
 	while(aux != NULL)
 	{
-		aux = (*copytrip);
-
 		(*copytrip) = (*copytrip)->next;
 
 		free(aux);
+
+		aux = (*copytrip);		
 	}
 
 	(*copytrip) = headtrip;
@@ -678,8 +683,64 @@ void TripListing(trip_node *headtrip)
 
 }
 
-void StationListing()
+void StationListing(trip_node *copytrip, station_node *copystation, int station_count, int max_id)
 {
+	int ***bikes = NULL, max = 0, min = 0, aver = 0;
+
+	// 0 for departure and 1 for arrival
+	max_id++;
+
+	bikes = (int ***) calloc(max_id, sizeof(int**));
+
+	for(int i = 0; i < max_id; i++)
+	{
+		bikes[i] = (int **) calloc(24, sizeof(int *));
+	}
+
+	for(int i = 0; i < max_id; i++)
+	{
+		for(int j = 0; j < 24; j++)
+		{
+			bikes[i][j] = (int *) calloc(2, sizeof(int));
+		}
+	}
+
+	while(copytrip != NULL)
+	{
+		bikes[copytrip->payload.start_stationID][copytrip->payload.start_time.hours][0] += 1;
+		bikes[copytrip->payload.end_stationID][copytrip->payload.end_time.hours][1] += 1;
+		
+		copytrip = copytrip->next;
+	}
+
+	while(copystation != NULL)
+	{
+		printf("%d, %s, (%f;%f)\n", copystation->payload.stationID, copystation->payload.long_name, copystation->payload.place.latitude, copystation->payload.place.longitude);
+
+		for()
+		{
+
+		}
+		printf("max = %d, min = %d, aver = %d", , , );
+
+		copystation = copystation->next;
+	}
+
+	
+	for(int i = 0; i < max_id; i++)
+	{
+		for(int j = 0; j < 24; j++)
+		{
+			free(bikes[i][j]);
+		}
+	}
+
+	for(int i = 0; i < max_id; i++)
+	{
+		free(bikes[i]);
+	}
+
+	free(bikes);
 
 }
 

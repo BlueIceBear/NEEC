@@ -3,8 +3,8 @@
 
 #include "utilities.h"
 
-trip_node* TripFiles(char *);
-station_node* StationFiles(char *);
+trip_node* TripFiles(char *, int *);
+station_node* StationFiles(char *, int *, int *);
 
 #endif
 

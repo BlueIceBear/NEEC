@@ -4,13 +4,13 @@
 #include "utilities.h"
 
 
-void Textual(trip_node *, station_node *);
+void Textual(trip_node *, station_node *, int, int, int);
 
 void MainMenu(int *);
 
-void DataSelection();
+void DataSelection(trip_node **, station_node **, trip_node *, station_node *, int *);
 void TripListing(trip_node *);
-void StationListing();
+void StationListing(trip_node *, station_node *, int, int);
 void RouteListing();
 void StatsListing();
 

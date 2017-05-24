@@ -2,11 +2,11 @@
 
 
 
-trip_node* TripFiles(char *trip_file)
+trip_node* TripFiles(char *trip_file, int *trip_count)
 {
 	char line[MAX_LONG_STRING], *str_aux;
 
-	int count;
+	int count = 0;
 
 
 	trip_node *trips = NULL, *trip_current = NULL, *trip_aux = NULL;
@@ -64,6 +64,7 @@ trip_node* TripFiles(char *trip_file)
 		}
 
 
+
 		str_aux = strtok(line, ",");
 		sscanf(str_aux,"%d", &trip_current->payload.tripID);
 
@@ -74,12 +75,14 @@ trip_node* TripFiles(char *trip_file)
 		sscanf(str_aux,"%d/%d/%d %d:%d", &trip_current->payload.start_date.month, &trip_current->payload.start_date.day, &trip_current->payload.start_date.year, &trip_current->payload.start_time.hours, &trip_current->payload.start_time.minutes);
 
 		str_aux = strtok(NULL, ",");
+		trip_current->payload.start_stationID = 0;
 		sscanf(str_aux,"%d", &trip_current->payload.start_stationID);
 
 		str_aux = strtok(NULL, ",");
 		sscanf(str_aux,"%d/%d/%d %d:%d", &trip_current->payload.end_date.month, &trip_current->payload.end_date.day, &trip_current->payload.end_date.year, &trip_current->payload.end_time.hours, &trip_current->payload.end_time.minutes);
 
 		str_aux = strtok(NULL, ",");
+		trip_current->payload.end_stationID = 0;
 		sscanf(str_aux,"%d", &trip_current->payload.end_stationID);
 
 		str_aux = strtok(NULL, ",");
@@ -121,14 +124,21 @@ trip_node* TripFiles(char *trip_file)
 
 	fclose(ftrip);
 
+	*trip_count = count;
+
 	return trips;
 }
 
-station_node* StationFiles(char *station_file)
+
+
+
+
+
+station_node* StationFiles(char *station_file, int *station_count, int *max_id)
 {
 	char line[MAX_LONG_STRING], *str_aux;
 
-	int count = 0;
+	int count = 0, id = 0;
 
 	station_node *stations = NULL, *station_current = NULL, *station_aux = NULL;
 
@@ -198,13 +208,17 @@ station_node* StationFiles(char *station_file)
 		if(strcmp(str_aux,"Existing") == 0) station_current->payload.status = 0;
 		else station_current->payload.status = 1;
 
+		if(id < station_current->payload.stationID) id = station_current->payload.stationID;
 
 		station_current = station_current->next;
-
+		
 		count++;
 	}
 
 	fclose(fstation);
+
+	*station_count = count;
+	*max_id = id;
 
 	return stations;
 }
