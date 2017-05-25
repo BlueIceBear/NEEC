@@ -111,8 +111,19 @@ trip_node* TripFiles(char *trip_file, int *trip_count)
 			sscanf(str_aux,"%d", &trip_current->payload.user.birth);
 
 			str_aux = strtok(NULL, "\n");
-			if(strcmp(str_aux,"Male") == 0) trip_current->payload.user.gender = 0;
-			else trip_current->payload.user.gender = 1;
+			//printf("%s\n", str_aux);
+			//if(strcmp(str_aux,"Male") == 0) printf("pois\n");
+			//if(strcmp(str_aux,"Female") == 0) printf("pois\n");
+			if(str_aux[0] == 'M')
+			{
+				//printf("é macho\n");
+				trip_current->payload.user.gender = 0;
+			}
+			else 
+			{
+				//printf("é femea\n");
+				trip_current->payload.user.gender = 1;
+			}
 		}
 
 

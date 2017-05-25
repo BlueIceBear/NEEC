@@ -28,23 +28,22 @@ void Textual(trip_node *headtrip, station_node *headstation, int trip_count, int
 				break;
 
 			case 2:
-				printf("%d\n", copytrip->payload.tripID);
 				TripListing(copytrip);
 				option = 0;
 				break;
 
 			case 3:
-				StationListing(copytrip, copystation, station_count, max_id);
+				StationListing(copytrip, copystation, max_id, trip_count);
 				option = 0;
 				break;
 
 			case 4:
-				RouteListing();
+				RouteListing(copytrip, copystation, headstation, max_id);
 				option = 0;
 				break;
 
 			case 5:
-				StatsListing();
+				StatsListing(copytrip, trip_count);
 				option = 0;
 				break;
 
@@ -84,6 +83,11 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 
 	selection[0] = '\0';
 
+	getchar();
+
+	printf("Escolha o(s) parâmetros que deseja (insira 5 para sair):\n");
+
+	printf("\t1. Período de tempo:\n\n\t2. Dia da semana\n\n\t3. Duração\n\n\t4. Remover restrições\n\n\t5. Sair para o menu principal\n");
 
 	while(((sscanf(selection,"%d", &pri_option) != 1) || (pri_option < 1) || (pri_option > 5)) && (pri_option != 4) && (pri_option != 5)) 
 	{
@@ -93,22 +97,23 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 			printf("\nEscolha inválida\n\n");
 		}
 
-		getchar();
 
-		printf("Escolha o(s) parâmetros que deseja (insira 5 para sair):\n");
-		printf("\t(escreva 'del <número do parâmetro>' para retirar esse parâmetro)\n\n");
-
-		printf("\t1. Período de tempo:\n\n\t2. Dia da semana\n\n\t3. Duração\n\n\t4. Remover restrições\n\n\t5. Sair para o menu principal\n");
 
 		fgets(selection, MAX_STRING, stdin);
 
 		aux = 1;
 	}
 
+	selection[0] = '\0';
+
 	switch(pri_option)
 	{
 		case 1:
 			// code for period of time selection
+
+			//getchar();
+
+			printf("\t-> to add (from 0 - Sunday to 6 - Saturday): <start hour>:<start minute> <end hour>:<end minute>\n");
 
 			while((sscanf(selection,"%d:%d %d:%d", &start_hours, &start_minutes, &end_hours, &end_minutes) != 4) || (start_hours < 0) || (start_minutes < 0) || (end_hours < 0) || (end_minutes < 0))
 			{
@@ -117,9 +122,7 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 					printf("\nEscolha inválida\n\n");
 				}
 
-				getchar();
-
-				printf("\t-> to add: <start hour>:<start minute> <end hour>:<end minute>\n");
+				
 
 				fgets(selection, MAX_STRING, stdin);
 
@@ -135,16 +138,18 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 		case 2:
 			// code for day of the week selection
 
+			//getchar();
+
+			printf("\t-> to add: <dia da semana>\n");
+
 			while((sscanf(selection,"%d", &sec_option) != 1) || (sec_option < 0) || (sec_option > 7))
 			{
-				if(aux == 1)
+				/*if(aux == 1)
 				{
 					printf("\nEscolha inválida\n\n");
-				}
+				}*/
 
-				getchar();
-
-				printf("\t-> to add: <dia da semana>\n");
+				
 
 				fgets(selection, MAX_STRING, stdin);
 
@@ -158,6 +163,10 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 		case 3:
 			// code for duration selection
 
+			//getchar();
+
+			printf("\t-> to add: 3 <duração>\n");
+
 			while((sscanf(selection,"%d", &sec_option) != 1) || (sec_option < 0))
 			{
 				if(aux == 1)
@@ -165,9 +174,7 @@ void DataSelection(trip_node **copytrip, station_node **copystation, trip_node *
 					printf("\nEscolha inválida\n\n");
 				}
 
-				getchar();
-
-				printf("\t-> to add: 3 <duração>\n");
+				
 
 				fgets(selection, MAX_STRING, stdin);
 
@@ -683,9 +690,9 @@ void TripListing(trip_node *headtrip)
 
 }
 
-void StationListing(trip_node *copytrip, station_node *copystation, int station_count, int max_id)
+void StationListing(trip_node *copytrip, station_node *copystation, int max_id, int trip_count)
 {
-	int ***bikes = NULL, max = 0, min = 0, aver = 0;
+	int ***bikes = NULL, max[2] = {0}, min[2] = {0}, aver[2] = {0}, sum[2] = {0};
 
 	// 0 for departure and 1 for arrival
 	max_id++;
@@ -715,13 +722,32 @@ void StationListing(trip_node *copytrip, station_node *copystation, int station_
 
 	while(copystation != NULL)
 	{
-		printf("%d, %s, (%f;%f)\n", copystation->payload.stationID, copystation->payload.long_name, copystation->payload.place.latitude, copystation->payload.place.longitude);
+		
+		min[0] = trip_count + 10;	// add 10 only to guarrantee that the min changes
+		min[1] = trip_count + 10;
+		max[0] = 0;
+		max[1] = 0;
 
-		for()
+		for(int i = 0; i < 24; i++)
 		{
+			if(max[0] < bikes[copystation->payload.stationID][i][0]) max[0] = bikes[copystation->payload.stationID][i][0];
+			if(max[1] < bikes[copystation->payload.stationID][i][1]) max[1] = bikes[copystation->payload.stationID][i][1];
 
+			if(min[0] > bikes[copystation->payload.stationID][i][0]) min[0] = bikes[copystation->payload.stationID][i][0];
+			if(min[1] > bikes[copystation->payload.stationID][i][1]) min[1] = bikes[copystation->payload.stationID][i][1];
+
+			sum[0] = sum[0] + bikes[copystation->payload.stationID][i][0];
+			sum[1] = sum[1] + bikes[copystation->payload.stationID][i][1];
 		}
-		printf("max = %d, min = %d, aver = %d", , , );
+
+		aver[0] = sum[0]/24;
+		aver[1] = sum[1]/24;
+		
+		if(((max[0] != 0) || (max[1] != 0)) && ((min[0] != trip_count + 10) || min[1] != trip_count + 10))
+		{
+			printf("%d, %s, (%f;%f)\n", copystation->payload.stationID, copystation->payload.long_name, copystation->payload.place.latitude, copystation->payload.place.longitude);
+			printf("max = %d,%d ; min = %d,%d ; aver = %d,%d\n", max[0], max[1], min[0], min[1], aver[0], aver[1]);
+		}
 
 		copystation = copystation->next;
 	}
@@ -744,14 +770,243 @@ void StationListing(trip_node *copytrip, station_node *copystation, int station_
 
 }
 
-void RouteListing()
+void RouteListing(trip_node *copytrip, station_node *copystation, station_node *headstation, int max_id)
 {
+	int station = 0, count = 0, **trips = NULL, station_num = 0, k = 0, i = 0, j = 0;
+
+	char str_aux[MAX_STRING];
+
+	str_aux[0] = '\0';
+
+	max_id++;
+
+	trips = (int **) calloc(max_id, sizeof(int*));
+
+	for(int i = 0; i < max_id; i++)
+	{
+		trips[i] = (int *) calloc(2, sizeof(int));
+	}
+
+	printf("Escolha uma estação (pelo seu ID):\n");
+	scanf("%d", &station);
+
+	while(copytrip != NULL)
+	{
+		if(copytrip->payload.start_stationID == station)
+		{
+			trips[copytrip->payload.end_stationID][0] += 1;
+		}
+		if(copytrip->payload.end_stationID == station)
+		{
+			trips[copytrip->payload.start_stationID][1] += 1;
+		}
+
+		copytrip = copytrip->next;
+	}
+
+
+
+	printf("Quantas estações a apresentar de cada vez?\n(é possível navegar pelas páginas inserindo \"n\" para ver a próxima, \"p\" para ver a anterior e \"exit\" para sair da listagem para o menu principal)\n");
+
+	while(scanf("%d", &station_num) != 1 && station_num < 0)
+	{
+		printf("Número de viagens inválido.\n");
+	}
+
+	getchar();
+
+	while(strcmp(str_aux, "exit\n") != 0)
+	{
+		if(k == 0)
+		{
+			for(j = 0; i < max_id && j < station_num; i++)
+			{
+				while(copystation != NULL && copystation->payload.stationID != i)
+				{
+					copystation = copystation->next;
+				}
+				if(trips[i][0] != 0 || trips[i][1] != 0)
+				{
+					printf("estação %d, %s, tem %d partidas e %d chegadas\n", i, copystation->payload.long_name, trips[i][1], trips[i][0]);
+
+					j++;
+				}
+
+				copystation = headstation;
+			}
+		}
+		
+		
+		if(j == 0)
+		{
+			printf("Última página. Insira \"exit\" para sair.\n");
+		}
+
+		fgets(str_aux, MAX_STRING, stdin);
+
+		k = 1;
+
+		if(strcmp(str_aux,"n\n") == 0 && j != 0) k = 0;
+	}
+
+	for(int i = 0; i < max_id; i++)
+	{
+		free(trips[i]);
+	}
+
+	free(trips);
+}
+
+void StatsListing(trip_node *copytrip, int trip_count)
+{
+	int option = 0, aux = 0;
+
+	char selection[MAX_STRING];
+
+	selection[0] = '\0';
+
+	getchar();
+
+	while(((sscanf(selection,"%d", &option) != 1) || (option < 1) || (option > 4)) && (option != 4)) 
+	{
+
+		if(aux == 1) 
+		{
+			printf("\nEscolha inválida\n\n");
+		}
+
+		printf("Escolha o(s) parâmetros que deseja (insira 5 para sair):\n");
+		printf("\t(escreva 'del <número do parâmetro>' para retirar esse parâmetro)\n\n");
+
+		printf("\t1. Estatísticas por género\n\n\t2. Estatísticas da idade\n\n\t3. Estatísticas da duração\n\n\t4. Estatísticas da velocidade\n\n\t5. Sair para o menu principal\n");
+
+		fgets(selection, MAX_STRING, stdin);
+
+		aux = 1;
+	}
+
+	switch(option)
+	{
+		case 1:
+			GenderStats(copytrip);
+			break;
+
+		case 2:
+			AgeStats(copytrip);
+			option = 0;
+			break;
+
+		case 3:
+			DurationStats(copytrip);
+			option = 0;
+			break;
+
+		case 4:
+			VelocityStats();
+			option = 0;
+			break;
+
+		default:
+			break;
+	}
+
+
 
 }
 
-void StatsListing()
+void GenderStats(trip_node *copytrip)
 {
+	float male = 0.0f, female = 0.0f;
 
+	while(copytrip != NULL)
+	{
+		if(copytrip->payload.user.membership == 1)
+		{
+			if(copytrip->payload.user.gender == 0) male = male + 1;
+			else female = female + 1;
+		}
+
+		copytrip = copytrip->next;
+	}
+
+	printf("male percentage = %.1f %%; female percentage = %.1f %%\n", (male/(male+female))*100, (female/(male+female))*100);
 }
 
+void AgeStats(trip_node *copytrip)
+{
+	int start_year = 0, end_year = 0, aux = 0, age = 0;
+	float sum = 0.0f;
+	float vector[150] = {0.0f};
+
+	while(copytrip != NULL)
+	{
+		if(copytrip->payload.user.membership == 1)
+		{
+			age = 2017 - copytrip->payload.user.birth;	// precisa de modificacoes!!!
+			vector[age/2] = vector[age/2] + 1;
+			sum = sum + 1;
+		}
+
+		copytrip = copytrip->next;
+	}
+
+	for(int i = 0; i < 150; i++)
+	{
+		if(vector[i] != 0) printf("%d-%d: %.4f %%\n", i*2, i*2+2, ((vector[i])/sum)*100);
+	}
+}
+
+void DurationStats(trip_node *copytrip)
+{
+	float vector[60*6/15] = {0.0f}, sum = 0.0f;
+
+	while(copytrip != NULL)
+	{
+		if(copytrip->payload.duration < 6*3600)
+		{
+			vector[copytrip->payload.duration/(15*60)] = vector[copytrip->payload.duration/(15*60)] + 1;
+			sum = sum + 1;
+		}
+
+		copytrip = copytrip->next;
+	}
+
+		for(int i = 0; i < 60*6/15; i++)
+	{
+		if(vector[i] != 0) printf("%d-%dmin: %.4f %%\n", i*15, i*15+15, ((vector[i])/sum)*100);
+	}
+}
+
+void VelocityStats(trip_node *copytrip, int trip_count)
+{
+	float male = 0.0f, female = 0.0f, vector[150] = {0.0f}, sum = 0.0f, ***trips = NULL;
+
+	trips = (float ***) calloc(trip_count, sizeof(float));
+
+	for(int i = 0; ; i++)
+	{
+		
+	}
+
+	while(copytrip != NULL)
+	{
+		if(copytrip->payload.user.membership == 1)
+		{
+			if(copytrip->payload.user.gender == 0) male = male + 1;
+			else female = female + 1;
+
+			age = 2017 - copytrip->payload.user.birth;	// precisa de modificacoes!!!
+			vector[age] = vector[age] + 1;
+			sum = sum + 1;
+		}
+
+		copytrip = copytrip->next;
+	}
+
+	printf("male percentage = %.1f %%; female percentage = %.1f %%\n", (male/(male+female))*100, (female/(male+female))*100);
+	for(int i = 0; i < 150; i++)
+	{
+		if(vector[i] != 0) printf("%d: %.4f %%\n", i, ((vector[i])/sum)*100);
+	}
+}
 

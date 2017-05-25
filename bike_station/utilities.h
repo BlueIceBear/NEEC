@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 
+#define PI 3.14159265
 #define MAX_STRING 100
 #define MAX_LONG_STRING 1000
 

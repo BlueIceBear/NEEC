@@ -19,4 +19,9 @@ void WeekDay(trip_node **, int, int);
 void TripDuration(trip_node **, int, int);
 void RemoveSelections(trip_node **, trip_node *);
 
+void GenderStats();
+void AgeStats();
+void DurationStats();
+void VelocityStats();
+
 #endif
